@@ -1842,14 +1842,14 @@ class Application(httputil.HTTPServerConnectionDelegate):
         # precedence than the more-precise handlers added later.
         # If a wildcard handler group exists, it should always be last
         # in the list, so insert new groups just before it.
-        # æ‰‹åŠ¨æ·»åŠ çš„ä¼˜å…ˆçº§æ¯”åˆå§‹åŒ–æ—¶å€™çš„handlersä¼˜å…ˆçº§é«˜,è¶Šæ—©æ·»åŠ çš„ä¼˜å…ˆçº§è¶Šé«˜
+        # ÊÖ¶¯Ìí¼ÓµÄÓÅÏÈ¼¶±È³õÊ¼»¯Ê±ºòµÄhandlersÓÅÏÈ¼¶¸ß,Ô½ÔçÌí¼ÓµÄÓÅÏÈ¼¶Ô½¸ß
         if self.handlers and self.handlers[-1][0].pattern == '.*$':
-            self.handlers.insert(-1, (re.compile(host_pattern), handlers)) # ä¿è¯æ„é€ å‡½æ•°åˆå§‹åŒ–æ—¶å€™çš„handlersåœ¨æœ€å
+            self.handlers.insert(-1, (re.compile(host_pattern), handlers)) # ±£Ö¤¹¹Ôìº¯Êı³õÊ¼»¯Ê±ºòµÄhandlersÔÚ×îºó
         else:
             self.handlers.append((re.compile(host_pattern), handlers))
 
         for spec in host_handlers:
-            if isinstance(spec, (tuple, list)): # å…ƒç¥–æˆ–è€…åˆ—è¡¨
+            if isinstance(spec, (tuple, list)): # Ôª×æ»òÕßÁĞ±í
                 assert len(spec) in (2, 3, 4)
                 spec = URLSpec(*spec)
             handlers.append(spec)
@@ -1858,7 +1858,7 @@ class Application(httputil.HTTPServerConnectionDelegate):
                     app_log.warning(
                         "Multiple handlers named %s; replacing previous value",
                         spec.name)
-                self.named_handlers[spec.name] = spec # åå­—é‡å¤ï¼Œåæ·»åŠ çš„handlerä¼šè¦†ç›–ä¹‹å‰çš„handler
+                self.named_handlers[spec.name] = spec # Ãû×ÖÖØ¸´£¬ºóÌí¼ÓµÄhandler»á¸²¸ÇÖ®Ç°µÄhandler
 
     def add_transform(self, transform_class):
         self.transforms.append(transform_class)

@@ -267,7 +267,7 @@ def _make_coroutine_wrapper(func, replace_callback):
                 future, lambda future: callback(future.result()))
 
         try:
-            # è°ƒç”¨å®é™…çš„å¤„ç†å‡½æ•°å¦‚æœè¿”å›GeneratorTypeï¼Œé‚£ä¹ˆè¿›å…¥Runnerç±»å¾ªç¯æ‰§è¡ŒçŸ¥é“ç»ˆæ­¢
+            # µ÷ÓÃÊµ¼ÊµÄ´¦Àíº¯ÊıÈç¹û·µ»ØGeneratorType£¬ÄÇÃ´½øÈëRunnerÀàÑ­»·Ö´ĞĞÖªµÀÖÕÖ¹
             result = func(*args, **kwargs)
         except (Return, StopIteration) as e:
             result = _value_from_stopiteration(e)
@@ -283,7 +283,7 @@ def _make_coroutine_wrapper(func, replace_callback):
                 # performance penalty for the synchronous case.
                 try:
                     orig_stack_contexts = stack_context._state.contexts
-                    yielded = next(result) # è¿”å›ä¸€ä¸ªFutureï¼Œå¼‚æ­¥è°ƒç”¨è¿”å›çš„Futureï¼Œåœ¨å¼‚æ­¥è°ƒç”¨æˆåŠŸåä¼šå°†è¿™ä¸ªFutureç»™set_done
+                    yielded = next(result) # ·µ»ØÒ»¸öFuture£¬Òì²½µ÷ÓÃ·µ»ØµÄFuture£¬ÔÚÒì²½µ÷ÓÃ³É¹¦ºó»á½«Õâ¸öFuture¸øset_done
                     if stack_context._state.contexts is not orig_stack_contexts:
                         yielded = TracebackFuture()
                         yielded.set_exception(
@@ -718,7 +718,7 @@ class MultiYieldPoint(YieldPoint):
             if not isinstance(i, YieldPoint):
                 i = convert_yielded(i)
             if is_future(i):
-                i = YieldFuture(i) # è½¬ä¸ºYieldFuture
+                i = YieldFuture(i) # ×ªÎªYieldFuture
             self.children.append(i)
         assert all(isinstance(i, YieldPoint) for i in self.children)
         self.unfinished_children = set(self.children)
@@ -931,7 +931,7 @@ Usage: ``yield gen.moment``
 moment.set_result(None)
 
 
-# æŠ“ä½ä¸»å¹²å°±å¯ä»¥ï¼Œå…¶ä»–æ—æ”¯ç»†èŠ‚ç•¥è¿‡
+# ×¥×¡Ö÷¸É¾Í¿ÉÒÔ£¬ÆäËûÅÔÖ§Ï¸½ÚÂÔ¹ı
 class Runner(object):
     """Internal implementation of `tornado.gen.engine`.
 
@@ -1019,10 +1019,10 @@ class Runner(object):
                         yielded = self.gen.throw(*exc_info)
                         exc_info = None
                     else:
-                        yielded = self.gen.send(value) # å‘é€å¼‚æ­¥è°ƒç”¨ç»“æœï¼Œé€šçŸ¥ä»»åŠ¡å®Œæˆ
-                        # self.genä¸ºç”Ÿæˆå™¨ï¼Œå³è¢«@gen.coroutineä¿®é¥°çš„å‡½æ•°ï¼Œself.gen.sendå‘é€ç»“æœåˆ° yieldè¯­å¥è¿›è¡Œèµ‹å€¼
-                        # å³ result = yield clien.fetch(url)ï¼Œè¿™é‡Œçš„resultå³ä¸ºvalue
-                        # ç”Ÿæˆå™¨ç»“æŸä¼šå¾—åˆ°StopIterationå¼‚å¸¸ç»“æŸè°ƒç”¨ï¼Œå¦åˆ™ç»§ç»­è°ƒç”¨self.handle_yield
+                        yielded = self.gen.send(value) # ·¢ËÍÒì²½µ÷ÓÃ½á¹û£¬Í¨ÖªÈÎÎñÍê³É
+                        # self.genÎªÉú³ÉÆ÷£¬¼´±»@gen.coroutineĞŞÊÎµÄº¯Êı£¬self.gen.send·¢ËÍ½á¹ûµ½ yieldÓï¾ä½øĞĞ¸³Öµ
+                        # ¼´ result = yield clien.fetch(url)£¬ÕâÀïµÄresult¼´Îªvalue
+                        # Éú³ÉÆ÷½áÊø»áµÃµ½StopIterationÒì³£½áÊøµ÷ÓÃ£¬·ñÔò¼ÌĞøµ÷ÓÃself.handle_yield
                     if stack_context._state.contexts is not orig_stack_contexts:
                         self.gen.throw(
                             stack_context.StackContextInconsistentError(
@@ -1058,7 +1058,7 @@ class Runner(object):
     def handle_yield(self, yielded):
         # Lists containing YieldPoints require stack contexts;
         # other lists are handled in convert_yielded.
-        # å¤„ç† yield list or dict æƒ…å†µ
+        # ´¦Àí yield list or dict Çé¿ö
         if _contains_yieldpoint(yielded):
             yielded = multi(yielded)
 

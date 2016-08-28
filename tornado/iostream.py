@@ -582,12 +582,12 @@ class BaseIOStream(object):
             self._pending_callbacks += 1
             self.io_loop.add_callback(wrapper)
 
-    # ä¸€ç›´ä»sockfdä¸­è¯»æ•°æ®å¹¶å†™å…¥åˆ°ç¼“å†²åŒºä¸­ï¼Œç›´åˆ°æ— æ³•ä»sockfdä¸­è¯»å–åˆ°æ•°æ®æˆ–è€…æ»¡è¶³å¯¹åº”çš„è¯»éœ€æ±‚
-    # 1. å¦‚æœæ˜¯æµå¼ï¼Œé‚£ä¹ˆæ¯æ¬¡è¯»åˆ°æ•°æ®å°±å›è°ƒé€šçŸ¥ï¼Œå°†ç¼“å†²åŒºçš„æ•°æ®æ¶ˆè€—æ‰
-    # 2. å¦‚æœæ˜¯éæµå¼ï¼Œè¯»æ•°æ®ç›´åˆ°ç¼“å†²åŒºé•¿åº¦è¾¾åˆ°è¦æ±‚ä½ç½®ï¼Œè¿™é‡Œä¸ºäº†é˜²æ­¢è°ƒç”¨_find_read_posåšäº†ä¼˜åŒ–
+    # Ò»Ö±´ÓsockfdÖĞ¶ÁÊı¾İ²¢Ğ´Èëµ½»º³åÇøÖĞ£¬Ö±µ½ÎŞ·¨´ÓsockfdÖĞ¶ÁÈ¡µ½Êı¾İ»òÕßÂú×ã¶ÔÓ¦µÄ¶ÁĞèÇó
+    # 1. Èç¹ûÊÇÁ÷Ê½£¬ÄÇÃ´Ã¿´Î¶Áµ½Êı¾İ¾Í»Øµ÷Í¨Öª£¬½«»º³åÇøµÄÊı¾İÏûºÄµô
+    # 2. Èç¹ûÊÇ·ÇÁ÷Ê½£¬¶ÁÊı¾İÖ±µ½»º³åÇø³¤¶È´ïµ½ÒªÇóÎ»ÖÃ£¬ÕâÀïÎªÁË·ÀÖ¹µ÷ÓÃ_find_read_pos×öÁËÓÅ»¯
     def _read_to_buffer_loop(self):
         # This method is called from _handle_read and _try_inline_read.
-        # å¯¹äºæµå¼IOStreamï¼Œtarget_bytesæ˜¯æ²¡æœ‰æ„ä¹‰çš„ï¼Œå› ä¸ºä¸€æ—¦ç¼“å†²åŒºæœ‰æ•°æ®å°±ä¼šè¿›è¡Œå›è°ƒï¼Œå°†æ•°æ®æ¶ˆè€—æ‰
+        # ¶ÔÓÚÁ÷Ê½IOStream£¬target_bytesÊÇÃ»ÓĞÒâÒåµÄ£¬ÒòÎªÒ»µ©»º³åÇøÓĞÊı¾İ¾Í»á½øĞĞ»Øµ÷£¬½«Êı¾İÏûºÄµô
         try:
             if self._read_bytes is not None:
                 target_bytes = self._read_bytes
@@ -612,7 +612,7 @@ class BaseIOStream(object):
             # clause below (which calls `close` and does need to
             # trigger the callback)
             self._pending_callbacks += 1
-            # ä¸€ç›´è¯»ï¼Œç›´åˆ°æ»¡è¶³è¦æ±‚ä¸ºæ­¢
+            # Ò»Ö±¶Á£¬Ö±µ½Âú×ãÒªÇóÎªÖ¹
             while not self.closed():
                 # Read from the socket until we get EWOULDBLOCK or equivalent.
                 # SSL sockets do some internal buffering, and if the data is
@@ -622,7 +622,7 @@ class BaseIOStream(object):
                 if self._read_to_buffer() == 0:
                     break
 
-                self._run_streaming_callback() # æµå¼callbackï¼Œæœ‰æ•°æ®å°±ä¸€ç›´æ¶ˆè€—ï¼Œå¦‚æœå°†iostreamè®¾ç½®ä¸ºæµå¼ï¼Œæ€§èƒ½ä¼šæå‡
+                self._run_streaming_callback() # Á÷Ê½callback£¬ÓĞÊı¾İ¾ÍÒ»Ö±ÏûºÄ£¬Èç¹û½«iostreamÉèÖÃÎªÁ÷Ê½£¬ĞÔÄÜ»áÌáÉı
 
                 # If we've read all the bytes we can use, break out of
                 # this loop.  We can't just call read_from_buffer here
@@ -638,13 +638,13 @@ class BaseIOStream(object):
                 # It's inefficient to do this on every read, so instead
                 # do it on the first read and whenever the read buffer
                 # size has doubled.
-                # ä¸€ç›´ä»sockfdä¸­è·å–ç¼“å†²åŒºæ•°æ®ï¼Œç›´åˆ°ç¼“å†²åŒºçš„æ•°æ®è¾¾åˆ°æˆ‘ä»¬çš„è¦æ±‚ä½ç½®
+                # Ò»Ö±´ÓsockfdÖĞ»ñÈ¡»º³åÇøÊı¾İ£¬Ö±µ½»º³åÇøµÄÊı¾İ´ïµ½ÎÒÃÇµÄÒªÇóÎ»ÖÃ
                 if self._read_buffer_size >= next_find_pos:
-                    # å¤§äºæ‰æœ‰å¯èƒ½æ»¡è¶³éœ€æ±‚
-                    pos = self._find_read_pos() # ä»ç°æœ‰çš„ç¼“å†²åŒºæ•°æ®ä¸­æ‰¾ä¸€ä¸‹æ»¡è¶³éœ€æ±‚çš„pos
+                    # ´óÓÚ²ÅÓĞ¿ÉÄÜÂú×ãĞèÇó
+                    pos = self._find_read_pos() # ´ÓÏÖÓĞµÄ»º³åÇøÊı¾İÖĞÕÒÒ»ÏÂÂú×ãĞèÇóµÄpos
                     if pos is not None:
                         return pos
-                    next_find_pos = self._read_buffer_size * 2  # æ²¡æœ‰æ‰¾åˆ°ï¼Œç»§ç»­ä»sockfdè·å–æ•°æ®ï¼ŒæŒ‡æ•°å¢é•¿
+                    next_find_pos = self._read_buffer_size * 2  # Ã»ÓĞÕÒµ½£¬¼ÌĞø´Ósockfd»ñÈ¡Êı¾İ£¬Ö¸ÊıÔö³¤
             return self._find_read_pos()
         finally:
             self._pending_callbacks -= 1
@@ -672,7 +672,7 @@ class BaseIOStream(object):
         else:
             self._read_future = TracebackFuture()
         return self._read_future
-    # ä»ç¼“å†²åŒºå¤„ç† =size= å­—èŠ‚æ•°æ®å¹¶è°ƒç”¨callbackè¿›è¡Œé€šçŸ¥
+    # ´Ó»º³åÇø´¦Àí =size= ×Ö½ÚÊı¾İ²¢µ÷ÓÃcallback½øĞĞÍ¨Öª
     def _run_read_callback(self, size, streaming):
         if streaming:
             callback = self._streaming_callback
@@ -701,14 +701,14 @@ class BaseIOStream(object):
         """
         # See if we've already got the data from a previous read
         self._run_streaming_callback()
-        # å…ˆå°è¯•ä»ç¼“å†²åŒºä¸­è·å–æ•°æ®ï¼Œç¡®è®¤ä¸‹æ˜¯å¦æ»¡è¶³éœ€æ±‚
+        # ÏÈ³¢ÊÔ´Ó»º³åÇøÖĞ»ñÈ¡Êı¾İ£¬È·ÈÏÏÂÊÇ·ñÂú×ãĞèÇó
         pos = self._find_read_pos()
         if pos is not None:
             self._read_from_buffer(pos)
             return
         self._check_closed()
         try:
-            pos = self._read_to_buffer_loop() # ä¸€ç›´ä»sockfdä¸­è¯»æ•°æ®,ç›´åˆ°æ»¡è¶³è¦æ±‚
+            pos = self._read_to_buffer_loop() # Ò»Ö±´ÓsockfdÖĞ¶ÁÊı¾İ,Ö±µ½Âú×ãÒªÇó
         except Exception:
             # If there was an in _read_to_buffer, we called close() already,
             # but couldn't run the close callback because of _pending_callbacks.
@@ -716,7 +716,7 @@ class BaseIOStream(object):
             # applicable.
             self._maybe_run_close_callback()
             raise
-        # æ»¡è¶³è¦æ±‚å°±ä¸æ·»åŠ åˆ°ioloop
+        # Âú×ãÒªÇó¾Í²»Ìí¼Óµ½ioloop
         if pos is not None:
             self._read_from_buffer(pos)
             return
@@ -760,7 +760,7 @@ class BaseIOStream(object):
             raise StreamBufferFullError("Reached maximum read buffer size")
         return len(chunk)
 
-    # ä¼šè°ƒç”¨å›è°ƒå‡½æ•°å¤„ç†æ•°æ®
+    # »áµ÷ÓÃ»Øµ÷º¯Êı´¦ÀíÊı¾İ
     def _run_streaming_callback(self):
         if self._streaming_callback is not None and self._read_buffer_size:
             bytes_to_consume = self._read_buffer_size
@@ -779,7 +779,7 @@ class BaseIOStream(object):
         self._read_partial = False
         self._run_read_callback(pos, False)
 
-    # å°è¯•åœ¨ç¼“å†²åŒºä¸­æ‰¾ä¸€ä¸ªæ»¡è¶³è¯»è¯·æ±‚çš„ä½ç½®
+    # ³¢ÊÔÔÚ»º³åÇøÖĞÕÒÒ»¸öÂú×ã¶ÁÇëÇóµÄÎ»ÖÃ
     def _find_read_pos(self):
         """Attempts to find a position in the read buffer that satisfies
         the currently-pending read.

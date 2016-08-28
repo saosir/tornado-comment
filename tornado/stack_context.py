@@ -81,7 +81,7 @@ class StackContextInconsistentError(Exception):
 
 class _State(threading.local):
     def __init__(self):
-        # t[0]æ ˆåºåˆ— t[1]æ ˆé¡¶
+        # t[0]Õ»ĞòÁĞ t[1]Õ»¶¥
         self.contexts = (tuple(), None)
 _state = _State()
 
@@ -118,19 +118,19 @@ class StackContext(object):
     def enter(self):
         context = self.context_factory()
         self.contexts.append(context)
-        context.__enter__() # å‘ŠçŸ¥contextå…¥æ ˆ
+        context.__enter__() # ¸æÖªcontextÈëÕ»
 
     def exit(self, type, value, traceback):
-        context = self.contexts.pop() # å‘ŠçŸ¥contextå‡ºæ ˆ
+        context = self.contexts.pop() # ¸æÖªcontext³öÕ»
         context.__exit__(type, value, traceback)
 
     # Note that some of this code is duplicated in ExceptionStackContext
     # below.  ExceptionStackContext is more common and doesn't need
     # the full generality of this class.
     def __enter__(self):
-        # å…¥æ ˆ
+        # ÈëÕ»
         self.old_contexts = _state.contexts
-        self.new_contexts = (self.old_contexts[0] + (self,), self)  # æ ˆåºåˆ—åŠ 1ï¼Œæ ˆé¡¶æ›´æ–°ä¸ºå½“å‰çš„stackcontext, æ³¨æ„è¿™é‡Œæ˜¯å…ƒç¥–ï¼Œæ˜¯é‡æ–°èµ‹å€¼ï¼Œ
+        self.new_contexts = (self.old_contexts[0] + (self,), self)  # Õ»ĞòÁĞ¼Ó1£¬Õ»¶¥¸üĞÂÎªµ±Ç°µÄstackcontext, ×¢ÒâÕâÀïÊÇÔª×æ£¬ÊÇÖØĞÂ¸³Öµ£¬
         _state.contexts = self.new_contexts
 
         try:
@@ -145,7 +145,7 @@ class StackContext(object):
         try:
             self.exit(type, value, traceback)
         finally:
-            # å‡ºæ ˆ
+            # ³öÕ»
             final_contexts = _state.contexts
             _state.contexts = self.old_contexts
 
@@ -237,7 +237,7 @@ def _remove_deactivated(contexts):
     while head is not None and not head.active:
         head = head.old_contexts[1]
 
-    # Process chain æ¸…ç©ºunactiveçš„context
+    # Process chain Çå¿ÕunactiveµÄcontext
     ctx = head
     while ctx is not None:
         parent = ctx.old_contexts[1]
@@ -245,7 +245,7 @@ def _remove_deactivated(contexts):
         while parent is not None:
             if parent.active:
                 break
-            # æŒ‡é’ˆè¿æ¥åˆ°å‰ä¸€ä¸ªèŠ‚ç‚¹
+            # Ö¸ÕëÁ¬½Óµ½Ç°Ò»¸ö½Úµã
             ctx.old_contexts = parent.old_contexts
             parent = parent.old_contexts[1]
 
@@ -253,7 +253,7 @@ def _remove_deactivated(contexts):
 
     return (stack_contexts, head)
 
-# è¿™é‡Œwrapå°è£…å‡½æ•°fnï¼Œç”¨äºåœ¨fnè¢«å›è°ƒçš„æ—¶å€™ï¼Œå°†æ ˆä¸Šä¸‹æ–‡æ¢å¤ä¸ºwrapè¢«è°ƒç”¨çš„æ—¶å€™
+# ÕâÀïwrap·â×°º¯Êıfn£¬ÓÃÓÚÔÚfn±»»Øµ÷µÄÊ±ºò£¬½«Õ»ÉÏÏÂÎÄ»Ö¸´Îªwrap±»µ÷ÓÃµÄÊ±ºò
 
 def wrap(fn):
     """Returns a callable object that will restore the current `StackContext`
@@ -269,21 +269,21 @@ def wrap(fn):
 
     # Capture current stack head
     # TODO: Any other better way to store contexts and update them in wrapped function?
-    #ã€€è¿™é‡Œæ˜¯å…³é”®ç‚¹
-    cap_contexts = [_state.contexts] # å°†å½“å‰çš„æ ˆä¿ç•™ï¼Œå½“wrappedè¢«è°ƒç”¨çš„æ—¶å€™ï¼Œcap_contexts[0]çš„å†…å®¹å¯èƒ½ä¸_state.contextsä¸ç›¸ç­‰
+    #¡¡ÕâÀïÊÇ¹Ø¼üµã
+    cap_contexts = [_state.contexts] # ½«µ±Ç°µÄÕ»±£Áô£¬µ±wrapped±»µ÷ÓÃµÄÊ±ºò£¬cap_contexts[0]µÄÄÚÈİ¿ÉÄÜÓë_state.contexts²»ÏàµÈ
 
 
     if not cap_contexts[0][0] and not cap_contexts[0][1]:
         # Fast path when there are no active contexts.
         def null_wrapper(*args, **kwargs):
             try:
-                #1 å…ˆå‹æ ˆ
+                #1 ÏÈÑ¹Õ»
                 current_state = _state.contexts
                 _state.contexts = cap_contexts[0]
-                #2 è°ƒç”¨fn
+                #2 µ÷ÓÃfn
                 return fn(*args, **kwargs)
             finally:
-                #3 æœ€åå‡ºæ ˆ
+                #3 ×îºó³öÕ»
                 _state.contexts = current_state
         null_wrapper._wrapped = True
         return null_wrapper
@@ -308,7 +308,7 @@ def wrap(fn):
             last_ctx = 0
             stack = contexts[0]
 
-            # Apply state å¯¹æ¯ä¸ªæ ˆåºåˆ—è¿›è¡Œè°ƒç”¨ï¼Œæ¢å¤åˆ°åœ¨add_callbackæ—¶å€™çš„çŠ¶æ€
+            # Apply state ¶ÔÃ¿¸öÕ»ĞòÁĞ½øĞĞµ÷ÓÃ£¬»Ö¸´µ½ÔÚadd_callbackÊ±ºòµÄ×´Ì¬
             for n in stack:
                 try:
                     n.enter()
@@ -316,7 +316,7 @@ def wrap(fn):
                 except:
                     # Exception happened. Record exception info and store top-most handler
                     exc = sys.exc_info()
-                    top = n.old_contexts[1] # è°ƒç”¨æ ˆçš„ä¸Šä¸€å¸§å¼‚å¸¸å¤„ç†
+                    top = n.old_contexts[1] # µ÷ÓÃÕ»µÄÉÏÒ»Ö¡Òì³£´¦Àí
 
             # Execute callback if no exception happened while restoring state
             if top is None:
@@ -324,7 +324,7 @@ def wrap(fn):
                     ret = fn(*args, **kwargs)
                 except:
                     exc = sys.exc_info()
-                    top = contexts[1] # å›è°ƒæœ‰å¼‚å¸¸ï¼Œè°ƒç”¨ä¸è‡ªå·±æ ˆç›¸å…³çš„ä¸Šä¸‹æ–‡å¼‚å¸¸å¤„ç†ï¼Œæˆ–è€…ä¸€ç›´æ²¿ç€æ ˆå¾€ä¸Šä¼ é€’è¿™ä¸ªå¼‚å¸¸
+                    top = contexts[1] # »Øµ÷ÓĞÒì³££¬µ÷ÓÃÓë×Ô¼ºÕ»Ïà¹ØµÄÉÏÏÂÎÄÒì³£´¦Àí£¬»òÕßÒ»Ö±ÑØ×ÅÕ»ÍùÉÏ´«µİÕâ¸öÒì³£
 
             # If there was exception, try to handle it by going through the exception chain
             if top is not None:
@@ -360,7 +360,7 @@ def wrap(fn):
 
 
 def _handle_exception(tail, exc):
-    # ä»æ ˆé¡¶ä¸€ç›´å¾€æ ˆåº•é€’é€è¿™ä¸ªå¼‚å¸¸,çŸ¥é“æœ‰ä¸€ä¸ªæ ˆæ•è·è¿™ä¸ªå¼‚å¸¸ä½ç½®
+    # ´ÓÕ»¶¥Ò»Ö±ÍùÕ»µ×µİËÍÕâ¸öÒì³£,ÖªµÀÓĞÒ»¸öÕ»²¶»ñÕâ¸öÒì³£Î»ÖÃ
     while tail is not None:
         try:
             if tail.exit(*exc):

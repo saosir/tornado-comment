@@ -149,7 +149,7 @@ def fork_processes(num_processes, max_restarts=100):
         if id is not None:
             return id
     num_restarts = 0
-    # masterç­‰å¾…æ‰€æœ‰childå­è¿›ç¨‹ç»“æŸ
+    # masterµÈ´ıËùÓĞchild×Ó½ø³Ì½áÊø
     while children:
         try:
             pid, status = os.wait()
