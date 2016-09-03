@@ -275,6 +275,7 @@ def _make_coroutine_wrapper(func, replace_callback):
             future.set_exc_info(sys.exc_info())
             return future
         else:
+        	# 生成器
             if isinstance(result, GeneratorType):
                 # Inline the first iteration of Runner.run.  This lets us
                 # avoid the cost of creating a Runner when the coroutine
@@ -283,7 +284,7 @@ def _make_coroutine_wrapper(func, replace_callback):
                 # performance penalty for the synchronous case.
                 try:
                     orig_stack_contexts = stack_context._state.contexts
-                    yielded = next(result) # 返回一个Future，异步调用返回的Future，在异步调用成功后会将这个Future给set_done
+                    yielded = next(result) # 返回第一个Future，异步调用返回的Future，在异步调用成功后会将这个Future给set_done
                     if stack_context._state.contexts is not orig_stack_contexts:
                         yielded = TracebackFuture()
                         yielded.set_exception(

@@ -262,7 +262,7 @@ class Future(object):
         `add_done_callback` directly.
         """
         if self._done:
-            fn(self)
+            fn(self) # 成功立即调用
         else:
             self._callbacks.append(fn)
 
@@ -317,6 +317,7 @@ class Future(object):
 
     def _set_done(self):
         self._done = True
+        # 成功之后调用所有回调通知
         for cb in self._callbacks:
             try:
                 cb(self)

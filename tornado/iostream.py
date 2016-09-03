@@ -495,6 +495,7 @@ class BaseIOStream(object):
         pass
 
     def _handle_events(self, fd, events):
+        # 统一的事件回调
         if self.closed():
             gen_log.warning("Got events for closed stream %s", fd)
             return
@@ -504,6 +505,7 @@ class BaseIOStream(object):
                 # with the WRITE event, but SelectIOLoop reports a
                 # READ as well so we must check for connecting before
                 # either.
+                # 这里是调用子类的_handle_connect
                 self._handle_connect()
             if self.closed():
                 return
@@ -1002,6 +1004,10 @@ class IOStream(BaseIOStream):
 
     """
     def __init__(self, socket, *args, **kwargs):
+        # socket是有外部传递进来，加入没有connected，那么可以调用
+        # connect函数进行连接，connect异步函数，可以yield也可以通过
+        # callback形式得到连接成功通知，进来就设置成非阻塞，到底是
+        # 多想使用异步
         self.socket = socket
         self.socket.setblocking(False)
         super(IOStream, self).__init__(*args, **kwargs)
@@ -1036,6 +1042,7 @@ class IOStream(BaseIOStream):
 
     def connect(self, address, callback=None, server_hostname=None):
         """Connects the socket to a remote address without blocking.
+           socket以非阻塞方式连接远程地址
 
         May only be called if the socket passed to the constructor was
         not previously connected.  The address parameter is in the
@@ -1047,7 +1054,12 @@ class IOStream(BaseIOStream):
         class is recommended instead of calling this method directly.
         `.TCPClient` will do asynchronous DNS resolution and handle
         both IPv4 and IPv6.
-
+        只有当传递进来的socket没有连接才能调用这个函数，参数address与
+        `socket.connect <socket.socket.connect>`中的address参数一样(host, port)，底层
+        也是调用socket.connect，可以传递hostname进来，但是它是以同步的方式进行解析地址
+        这样会阻塞IOLoop，如果传递进来的不是ip地址而是host，建议使用TCPClient，TCPClient
+        使用异步的方式进行DNS解析IPv4和IPv6
+        
         If ``callback`` is specified, it will be called with no
         arguments when the connection is completed; if not this method
         returns a `.Future` (whose result after a successful
@@ -1073,13 +1085,16 @@ class IOStream(BaseIOStream):
            suitably-configured `ssl.SSLContext` to the
            `SSLIOStream` constructor to disable.
         """
+        # 表示我们正在连接，在BaseIOStream中
         self._connecting = True
+        # 有回调的话就不需要返回future
         if callback is not None:
             self._connect_callback = stack_context.wrap(callback)
             future = None
         else:
             future = self._connect_future = TracebackFuture()
         try:
+            # 异步连接
             self.socket.connect(address)
         except socket.error as e:
             # In non-blocking mode we expect connect() to raise an
@@ -1096,6 +1111,8 @@ class IOStream(BaseIOStream):
                                     self.socket.fileno(), e)
                 self.close(exc_info=True)
                 return future
+        # connect成功与否，可以通过select或者epoll检查socket是否可写
+        # 事件回调在BaseIOStream的_handle_events中
         self._add_io_state(self.io_loop.WRITE)
         return future
 
@@ -1197,10 +1214,12 @@ class IOStream(BaseIOStream):
                                 self.socket.fileno(), errno.errorcode[err])
             self.close()
             return
+        # 调用回调进行通知
         if self._connect_callback is not None:
             callback = self._connect_callback
             self._connect_callback = None
             self._run_callback(callback)
+        # 使用的是future方式进行通知，直接set_result
         if self._connect_future is not None:
             future = self._connect_future
             self._connect_future = None
