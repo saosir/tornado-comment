@@ -495,7 +495,7 @@ class BaseIOStream(object):
         pass
 
     def _handle_events(self, fd, events):
-        # Í³Ò»µÄÊÂ¼ş»Øµ÷
+        # ç»Ÿä¸€çš„äº‹ä»¶å›è°ƒ
         if self.closed():
             gen_log.warning("Got events for closed stream %s", fd)
             return
@@ -505,7 +505,7 @@ class BaseIOStream(object):
                 # with the WRITE event, but SelectIOLoop reports a
                 # READ as well so we must check for connecting before
                 # either.
-                # ÕâÀïÊÇµ÷ÓÃ×ÓÀàµÄ_handle_connect
+                # è¿™é‡Œæ˜¯è°ƒç”¨å­ç±»çš„_handle_connect
                 self._handle_connect()
             if self.closed():
                 return
@@ -584,12 +584,12 @@ class BaseIOStream(object):
             self._pending_callbacks += 1
             self.io_loop.add_callback(wrapper)
 
-    # Ò»Ö±´ÓsockfdÖĞ¶ÁÊı¾İ²¢Ğ´Èëµ½»º³åÇøÖĞ£¬Ö±µ½ÎŞ·¨´ÓsockfdÖĞ¶ÁÈ¡µ½Êı¾İ»òÕßÂú×ã¶ÔÓ¦µÄ¶ÁĞèÇó
-    # 1. Èç¹ûÊÇÁ÷Ê½£¬ÄÇÃ´Ã¿´Î¶Áµ½Êı¾İ¾Í»Øµ÷Í¨Öª£¬½«»º³åÇøµÄÊı¾İÏûºÄµô
-    # 2. Èç¹ûÊÇ·ÇÁ÷Ê½£¬¶ÁÊı¾İÖ±µ½»º³åÇø³¤¶È´ïµ½ÒªÇóÎ»ÖÃ£¬ÕâÀïÎªÁË·ÀÖ¹µ÷ÓÃ_find_read_pos×öÁËÓÅ»¯
+    # ä¸€ç›´ä»sockfdä¸­è¯»æ•°æ®å¹¶å†™å…¥åˆ°ç¼“å†²åŒºä¸­ï¼Œç›´åˆ°æ— æ³•ä»sockfdä¸­è¯»å–åˆ°æ•°æ®æˆ–è€…æ»¡è¶³å¯¹åº”çš„è¯»éœ€æ±‚
+    # 1. å¦‚æœæ˜¯æµå¼ï¼Œé‚£ä¹ˆæ¯æ¬¡è¯»åˆ°æ•°æ®å°±å›è°ƒé€šçŸ¥ï¼Œå°†ç¼“å†²åŒºçš„æ•°æ®æ¶ˆè€—æ‰
+    # 2. å¦‚æœæ˜¯éæµå¼ï¼Œè¯»æ•°æ®ç›´åˆ°ç¼“å†²åŒºé•¿åº¦è¾¾åˆ°è¦æ±‚ä½ç½®ï¼Œè¿™é‡Œä¸ºäº†é˜²æ­¢è°ƒç”¨_find_read_posåšäº†ä¼˜åŒ–
     def _read_to_buffer_loop(self):
         # This method is called from _handle_read and _try_inline_read.
-        # ¶ÔÓÚÁ÷Ê½IOStream£¬target_bytesÊÇÃ»ÓĞÒâÒåµÄ£¬ÒòÎªÒ»µ©»º³åÇøÓĞÊı¾İ¾Í»á½øĞĞ»Øµ÷£¬½«Êı¾İÏûºÄµô
+        # å¯¹äºæµå¼IOStreamï¼Œtarget_bytesæ˜¯æ²¡æœ‰æ„ä¹‰çš„ï¼Œå› ä¸ºä¸€æ—¦ç¼“å†²åŒºæœ‰æ•°æ®å°±ä¼šè¿›è¡Œå›è°ƒï¼Œå°†æ•°æ®æ¶ˆè€—æ‰
         try:
             if self._read_bytes is not None:
                 target_bytes = self._read_bytes
@@ -614,7 +614,7 @@ class BaseIOStream(object):
             # clause below (which calls `close` and does need to
             # trigger the callback)
             self._pending_callbacks += 1
-            # Ò»Ö±¶Á£¬Ö±µ½Âú×ãÒªÇóÎªÖ¹
+            # ä¸€ç›´è¯»ï¼Œç›´åˆ°æ»¡è¶³è¦æ±‚ä¸ºæ­¢
             while not self.closed():
                 # Read from the socket until we get EWOULDBLOCK or equivalent.
                 # SSL sockets do some internal buffering, and if the data is
@@ -624,7 +624,7 @@ class BaseIOStream(object):
                 if self._read_to_buffer() == 0:
                     break
 
-                self._run_streaming_callback() # Á÷Ê½callback£¬ÓĞÊı¾İ¾ÍÒ»Ö±ÏûºÄ£¬Èç¹û½«iostreamÉèÖÃÎªÁ÷Ê½£¬ĞÔÄÜ»áÌáÉı
+                self._run_streaming_callback() # æµå¼callbackï¼Œæœ‰æ•°æ®å°±ä¸€ç›´æ¶ˆè€—ï¼Œå¦‚æœå°†iostreamè®¾ç½®ä¸ºæµå¼ï¼Œæ€§èƒ½ä¼šæå‡
 
                 # If we've read all the bytes we can use, break out of
                 # this loop.  We can't just call read_from_buffer here
@@ -640,13 +640,13 @@ class BaseIOStream(object):
                 # It's inefficient to do this on every read, so instead
                 # do it on the first read and whenever the read buffer
                 # size has doubled.
-                # Ò»Ö±´ÓsockfdÖĞ»ñÈ¡»º³åÇøÊı¾İ£¬Ö±µ½»º³åÇøµÄÊı¾İ´ïµ½ÎÒÃÇµÄÒªÇóÎ»ÖÃ
+                # ä¸€ç›´ä»sockfdä¸­è·å–ç¼“å†²åŒºæ•°æ®ï¼Œç›´åˆ°ç¼“å†²åŒºçš„æ•°æ®è¾¾åˆ°æˆ‘ä»¬çš„è¦æ±‚ä½ç½®
                 if self._read_buffer_size >= next_find_pos:
-                    # ´óÓÚ²ÅÓĞ¿ÉÄÜÂú×ãĞèÇó
-                    pos = self._find_read_pos() # ´ÓÏÖÓĞµÄ»º³åÇøÊı¾İÖĞÕÒÒ»ÏÂÂú×ãĞèÇóµÄpos
+                    # å¤§äºæ‰æœ‰å¯èƒ½æ»¡è¶³éœ€æ±‚
+                    pos = self._find_read_pos() # ä»ç°æœ‰çš„ç¼“å†²åŒºæ•°æ®ä¸­æ‰¾ä¸€ä¸‹æ»¡è¶³éœ€æ±‚çš„pos
                     if pos is not None:
                         return pos
-                    next_find_pos = self._read_buffer_size * 2  # Ã»ÓĞÕÒµ½£¬¼ÌĞø´Ósockfd»ñÈ¡Êı¾İ£¬Ö¸ÊıÔö³¤
+                    next_find_pos = self._read_buffer_size * 2  # æ²¡æœ‰æ‰¾åˆ°ï¼Œç»§ç»­ä»sockfdè·å–æ•°æ®ï¼ŒæŒ‡æ•°å¢é•¿
             return self._find_read_pos()
         finally:
             self._pending_callbacks -= 1
@@ -674,7 +674,7 @@ class BaseIOStream(object):
         else:
             self._read_future = TracebackFuture()
         return self._read_future
-    # ´Ó»º³åÇø´¦Àí =size= ×Ö½ÚÊı¾İ²¢µ÷ÓÃcallback½øĞĞÍ¨Öª
+    # ä»ç¼“å†²åŒºå¤„ç† =size= å­—èŠ‚æ•°æ®å¹¶è°ƒç”¨callbackè¿›è¡Œé€šçŸ¥
     def _run_read_callback(self, size, streaming):
         if streaming:
             callback = self._streaming_callback
@@ -703,14 +703,14 @@ class BaseIOStream(object):
         """
         # See if we've already got the data from a previous read
         self._run_streaming_callback()
-        # ÏÈ³¢ÊÔ´Ó»º³åÇøÖĞ»ñÈ¡Êı¾İ£¬È·ÈÏÏÂÊÇ·ñÂú×ãĞèÇó
+        # å…ˆå°è¯•ä»ç¼“å†²åŒºä¸­è·å–æ•°æ®ï¼Œç¡®è®¤ä¸‹æ˜¯å¦æ»¡è¶³éœ€æ±‚
         pos = self._find_read_pos()
         if pos is not None:
             self._read_from_buffer(pos)
             return
         self._check_closed()
         try:
-            pos = self._read_to_buffer_loop() # Ò»Ö±´ÓsockfdÖĞ¶ÁÊı¾İ,Ö±µ½Âú×ãÒªÇó
+            pos = self._read_to_buffer_loop() # ä¸€ç›´ä»sockfdä¸­è¯»æ•°æ®,ç›´åˆ°æ»¡è¶³è¦æ±‚
         except Exception:
             # If there was an in _read_to_buffer, we called close() already,
             # but couldn't run the close callback because of _pending_callbacks.
@@ -718,7 +718,7 @@ class BaseIOStream(object):
             # applicable.
             self._maybe_run_close_callback()
             raise
-        # Âú×ãÒªÇó¾Í²»Ìí¼Óµ½ioloop
+        # æ»¡è¶³è¦æ±‚å°±ä¸æ·»åŠ åˆ°ioloop
         if pos is not None:
             self._read_from_buffer(pos)
             return
@@ -762,7 +762,7 @@ class BaseIOStream(object):
             raise StreamBufferFullError("Reached maximum read buffer size")
         return len(chunk)
 
-    # »áµ÷ÓÃ»Øµ÷º¯Êı´¦ÀíÊı¾İ
+    # ä¼šè°ƒç”¨å›è°ƒå‡½æ•°å¤„ç†æ•°æ®
     def _run_streaming_callback(self):
         if self._streaming_callback is not None and self._read_buffer_size:
             bytes_to_consume = self._read_buffer_size
@@ -781,7 +781,7 @@ class BaseIOStream(object):
         self._read_partial = False
         self._run_read_callback(pos, False)
 
-    # ³¢ÊÔÔÚ»º³åÇøÖĞÕÒÒ»¸öÂú×ã¶ÁÇëÇóµÄÎ»ÖÃ
+    # å°è¯•åœ¨ç¼“å†²åŒºä¸­æ‰¾ä¸€ä¸ªæ»¡è¶³è¯»è¯·æ±‚çš„ä½ç½®
     def _find_read_pos(self):
         """Attempts to find a position in the read buffer that satisfies
         the currently-pending read.
@@ -1004,10 +1004,10 @@ class IOStream(BaseIOStream):
 
     """
     def __init__(self, socket, *args, **kwargs):
-        # socketÊÇÓĞÍâ²¿´«µİ½øÀ´£¬¼ÓÈëÃ»ÓĞconnected£¬ÄÇÃ´¿ÉÒÔµ÷ÓÃ
-        # connectº¯Êı½øĞĞÁ¬½Ó£¬connectÒì²½º¯Êı£¬¿ÉÒÔyieldÒ²¿ÉÒÔÍ¨¹ı
-        # callbackĞÎÊ½µÃµ½Á¬½Ó³É¹¦Í¨Öª£¬½øÀ´¾ÍÉèÖÃ³É·Ç×èÈû£¬µ½µ×ÊÇ
-        # ¶àÏëÊ¹ÓÃÒì²½
+        # socketæ˜¯æœ‰å¤–éƒ¨ä¼ é€’è¿›æ¥ï¼ŒåŠ å…¥æ²¡æœ‰connectedï¼Œé‚£ä¹ˆå¯ä»¥è°ƒç”¨
+        # connectå‡½æ•°è¿›è¡Œè¿æ¥ï¼Œconnectå¼‚æ­¥å‡½æ•°ï¼Œå¯ä»¥yieldä¹Ÿå¯ä»¥é€šè¿‡
+        # callbackå½¢å¼å¾—åˆ°è¿æ¥æˆåŠŸé€šçŸ¥ï¼Œè¿›æ¥å°±è®¾ç½®æˆéé˜»å¡ï¼Œåˆ°åº•æ˜¯
+        # å¤šæƒ³ä½¿ç”¨å¼‚æ­¥
         self.socket = socket
         self.socket.setblocking(False)
         super(IOStream, self).__init__(*args, **kwargs)
@@ -1042,7 +1042,7 @@ class IOStream(BaseIOStream):
 
     def connect(self, address, callback=None, server_hostname=None):
         """Connects the socket to a remote address without blocking.
-           socketÒÔ·Ç×èÈû·½Ê½Á¬½ÓÔ¶³ÌµØÖ·
+           socketä»¥éé˜»å¡æ–¹å¼è¿æ¥è¿œç¨‹åœ°å€
 
         May only be called if the socket passed to the constructor was
         not previously connected.  The address parameter is in the
@@ -1054,11 +1054,11 @@ class IOStream(BaseIOStream):
         class is recommended instead of calling this method directly.
         `.TCPClient` will do asynchronous DNS resolution and handle
         both IPv4 and IPv6.
-        Ö»ÓĞµ±´«µİ½øÀ´µÄsocketÃ»ÓĞÁ¬½Ó²ÅÄÜµ÷ÓÃÕâ¸öº¯Êı£¬²ÎÊıaddressÓë
-        `socket.connect <socket.socket.connect>`ÖĞµÄaddress²ÎÊıÒ»Ñù(host, port)£¬µ×²ã
-        Ò²ÊÇµ÷ÓÃsocket.connect£¬¿ÉÒÔ´«µİhostname½øÀ´£¬µ«ÊÇËüÊÇÒÔÍ¬²½µÄ·½Ê½½øĞĞ½âÎöµØÖ·
-        ÕâÑù»á×èÈûIOLoop£¬Èç¹û´«µİ½øÀ´µÄ²»ÊÇipµØÖ·¶øÊÇhost£¬½¨ÒéÊ¹ÓÃTCPClient£¬TCPClient
-        Ê¹ÓÃÒì²½µÄ·½Ê½½øĞĞDNS½âÎöIPv4ºÍIPv6
+        åªæœ‰å½“ä¼ é€’è¿›æ¥çš„socketæ²¡æœ‰è¿æ¥æ‰èƒ½è°ƒç”¨è¿™ä¸ªå‡½æ•°ï¼Œå‚æ•°addressä¸
+        `socket.connect <socket.socket.connect>`ä¸­çš„addresså‚æ•°ä¸€æ ·(host, port)ï¼Œåº•å±‚
+        ä¹Ÿæ˜¯è°ƒç”¨socket.connectï¼Œå¯ä»¥ä¼ é€’hostnameè¿›æ¥ï¼Œä½†æ˜¯å®ƒæ˜¯ä»¥åŒæ­¥çš„æ–¹å¼è¿›è¡Œè§£æåœ°å€
+        è¿™æ ·ä¼šé˜»å¡IOLoopï¼Œå¦‚æœä¼ é€’è¿›æ¥çš„ä¸æ˜¯ipåœ°å€è€Œæ˜¯hostï¼Œå»ºè®®ä½¿ç”¨TCPClientï¼ŒTCPClient
+        ä½¿ç”¨å¼‚æ­¥çš„æ–¹å¼è¿›è¡ŒDNSè§£æIPv4å’ŒIPv6
         
         If ``callback`` is specified, it will be called with no
         arguments when the connection is completed; if not this method
@@ -1085,16 +1085,16 @@ class IOStream(BaseIOStream):
            suitably-configured `ssl.SSLContext` to the
            `SSLIOStream` constructor to disable.
         """
-        # ±íÊ¾ÎÒÃÇÕıÔÚÁ¬½Ó£¬ÔÚBaseIOStreamÖĞ
+        # è¡¨ç¤ºæˆ‘ä»¬æ­£åœ¨è¿æ¥ï¼Œåœ¨BaseIOStreamä¸­
         self._connecting = True
-        # ÓĞ»Øµ÷µÄ»°¾Í²»ĞèÒª·µ»Øfuture
+        # æœ‰å›è°ƒçš„è¯å°±ä¸éœ€è¦è¿”å›future
         if callback is not None:
             self._connect_callback = stack_context.wrap(callback)
             future = None
         else:
             future = self._connect_future = TracebackFuture()
         try:
-            # Òì²½Á¬½Ó
+            # å¼‚æ­¥è¿æ¥
             self.socket.connect(address)
         except socket.error as e:
             # In non-blocking mode we expect connect() to raise an
@@ -1111,8 +1111,8 @@ class IOStream(BaseIOStream):
                                     self.socket.fileno(), e)
                 self.close(exc_info=True)
                 return future
-        # connect³É¹¦Óë·ñ£¬¿ÉÒÔÍ¨¹ıselect»òÕßepoll¼ì²ésocketÊÇ·ñ¿ÉĞ´
-        # ÊÂ¼ş»Øµ÷ÔÚBaseIOStreamµÄ_handle_eventsÖĞ
+        # connectæˆåŠŸä¸å¦ï¼Œå¯ä»¥é€šè¿‡selectæˆ–è€…epollæ£€æŸ¥socketæ˜¯å¦å¯å†™
+        # äº‹ä»¶å›è°ƒåœ¨BaseIOStreamçš„_handle_eventsä¸­
         self._add_io_state(self.io_loop.WRITE)
         return future
 
@@ -1214,12 +1214,12 @@ class IOStream(BaseIOStream):
                                 self.socket.fileno(), errno.errorcode[err])
             self.close()
             return
-        # µ÷ÓÃ»Øµ÷½øĞĞÍ¨Öª
+        # è°ƒç”¨å›è°ƒè¿›è¡Œé€šçŸ¥
         if self._connect_callback is not None:
             callback = self._connect_callback
             self._connect_callback = None
             self._run_callback(callback)
-        # Ê¹ÓÃµÄÊÇfuture·½Ê½½øĞĞÍ¨Öª£¬Ö±½Óset_result
+        # ä½¿ç”¨çš„æ˜¯futureæ–¹å¼è¿›è¡Œé€šçŸ¥ï¼Œç›´æ¥set_result
         if self._connect_future is not None:
             future = self._connect_future
             self._connect_future = None

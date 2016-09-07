@@ -44,6 +44,11 @@ class _Connector(object):
     with other addresses, keeping one connection attempt per family
     in flight at a time.
 
+    使用"Happy Eyeballs" 算法优化ipv4与ipv6的连接，首先尝试连接`getaddrinfo``返回
+    的第一个地址，如果失败或者超时就会并行的尝试第二类地址（getaddrinfo返回的列表包含
+    ipv4和ipv6两类地址，通过self.split将其分成两类，将列表第一个元素作为第一类地址），
+    在第一个连接失败之后如果还有额外的地址，每一类地址都保持一个尝试连接进行三路握手，直到
+    能够成功连接为止
     http://tools.ietf.org/html/rfc6555
 
     """
@@ -67,6 +72,7 @@ class _Connector(object):
         be AF_INET and the other AF_INET6, although non-standard resolvers
         may return additional families).
         """
+        # 将ipv4和ipv6分两个结合
         primary = []
         secondary = []
         primary_af = addrinfo[0][0]
@@ -78,7 +84,9 @@ class _Connector(object):
         return primary, secondary
 
     def start(self, timeout=_INITIAL_CONNECT_TIMEOUT):
+        # 优先尝试primary地址，连接成功后通过返回future进行通知
         self.try_connect(iter(self.primary_addrs))
+        # 这里设置超时，超时后会尝试连接sencond地址
         self.set_timout(timeout)
         return self.future
 
@@ -93,6 +101,7 @@ class _Connector(object):
                 self.future.set_exception(self.last_error or
                                           IOError("connection failed"))
             return
+        # connect为用户的回调
         future = self.connect(af, addr)
         future.add_done_callback(functools.partial(self.on_connect_done,
                                                    addrs, af, addr))
@@ -107,11 +116,14 @@ class _Connector(object):
             # Error: try again (but remember what happened so we have an
             # error to raise in the end)
             self.last_error = e
+            # 连接失败，尝试下一个地址
             self.try_connect(addrs)
+            # start的时候设置有timeout
             if self.timeout is not None:
                 # If the first attempt failed, don't wait for the
                 # timeout to try an address from the secondary queue.
                 self.io_loop.remove_timeout(self.timeout)
+                # 在on_timeout会将self.timeout赋值None，防止重复循环连接
                 self.on_timeout()
             return
         self.clear_timeout()
@@ -140,6 +152,7 @@ class TCPClient(object):
     .. versionchanged:: 4.1
        The ``io_loop`` argument is deprecated.
     """
+	# 非阻塞socket连接，对dns解析进行优化，使用happy eyeballs算法优化
     def __init__(self, resolver=None, io_loop=None):
         self.io_loop = io_loop or IOLoop.current()
         if resolver is not None:
@@ -161,7 +174,9 @@ class TCPClient(object):
         Asynchronously returns an `.IOStream` (or `.SSLIOStream` if
         ``ssl_options`` is not None).
         """
+        # 进行dns地址解析
         addrinfo = yield self.resolver.resolve(host, port, af)
+        # 连接socket，发现一个能连接就返回
         connector = _Connector(
             addrinfo, self.io_loop,
             functools.partial(self._create_stream, max_buffer_size))
@@ -177,6 +192,7 @@ class TCPClient(object):
     def _create_stream(self, max_buffer_size, af, addr):
         # Always connect in plaintext; we'll convert to ssl if necessary
         # after one connection has completed.
+        # 阐释连接某地址
         stream = IOStream(socket.socket(af),
                           io_loop=self.io_loop,
                           max_buffer_size=max_buffer_size)

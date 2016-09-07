@@ -262,7 +262,7 @@ class Future(object):
         `add_done_callback` directly.
         """
         if self._done:
-            fn(self) # ³É¹¦Á¢¼´µ÷ÓÃ
+            fn(self) # ï¿½É¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         else:
             self._callbacks.append(fn)
 
@@ -317,7 +317,7 @@ class Future(object):
 
     def _set_done(self):
         self._done = True
-        # ³É¹¦Ö®ºóµ÷ÓÃËùÓÐ»Øµ÷Í¨Öª
+        # ï¿½É¹ï¿½Ö®ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð»Øµï¿½Í¨Öª
         for cb in self._callbacks:
             try:
                 cb(self)
