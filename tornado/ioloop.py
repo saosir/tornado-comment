@@ -67,7 +67,7 @@ _POLL_TIMEOUT = 3600.0
 class TimeoutError(Exception):
     pass
 
-# tornado ×îµ×²ãµÄÀàIOLoop,×ÓÀàĞèÒªÊµÏÖ±ØÒªµÄÄ£°å·½·¨
+# tornado æœ€åº•å±‚çš„ç±»IOLoop,å­ç±»éœ€è¦å®ç°å¿…è¦çš„æ¨¡æ¿æ–¹æ³•
 class IOLoop(Configurable):
     """A level-triggered I/O loop.
 
@@ -154,6 +154,7 @@ class IOLoop(Configurable):
         another thread.  In most other cases, it is better to use `current()`
         to get the current thread's `IOLoop`.
         """
+        # å•ä¾‹æ¨¡å¼
         if not hasattr(IOLoop, "_instance"):
             with IOLoop._instance_lock:
                 if not hasattr(IOLoop, "_instance"):
@@ -232,9 +233,9 @@ class IOLoop(Configurable):
     def configurable_base(cls):
         return IOLoop
 
-    # ¸ù¾İÏµÍ³¶¯Ì¬Ñ¡Ôñµ×²ãµÄIO¶àÂ·¸´ÓÃÄ£ĞÍ
-    # ÀàËÆÓÚlibevent,ÓÅÏÈÑ¡Ôñepoll,×î²îÇé¿ö
-    # Ö»ÄÜÊ¹ÓÃselectÄ£ĞÍ
+    # æ ¹æ®ç³»ç»ŸåŠ¨æ€é€‰æ‹©åº•å±‚çš„IOå¤šè·¯å¤ç”¨æ¨¡å‹
+    # ç±»ä¼¼äºlibevent,ä¼˜å…ˆé€‰æ‹©epoll,æœ€å·®æƒ…å†µ
+    # åªèƒ½ä½¿ç”¨selectæ¨¡å‹
     @classmethod
     def configurable_default(cls):
         if hasattr(select, "epoll"):
@@ -247,6 +248,7 @@ class IOLoop(Configurable):
         from tornado.platform.select import SelectIOLoop
         return SelectIOLoop
 
+    # ç›¸å½“äº__init__å‡½æ•°
     def initialize(self, make_current=None):
         if make_current is None:
             if IOLoop.current(instance=False) is None:
@@ -401,6 +403,7 @@ class IOLoop(Configurable):
         raise NotImplementedError()
 
     def run_sync(self, func, timeout=None):
+        # åŒæ­¥è¿è¡Œï¼Œfuncè¿”å›Noneæˆ–è€…Futureï¼Œè¿è¡Œç»“æŸloopä¼šé€€å‡º
         """Starts the `IOLoop`, runs the given function, and stops the loop.
 
         The function must return either a yieldable object or
@@ -492,7 +495,7 @@ class IOLoop(Configurable):
         the other.  `call_at` is usually easier to implement, but
         subclasses that wish to maintain compatibility with Tornado
         versions prior to 4.0 must use `add_timeout` instead.
-
+        å­ç±»éœ€è¦å®ç°add_timeoutæˆ–è€…call_atä¹‹ä¸€ï¼ŒIOLoopåœ¨å¾ªç¯è°ƒç”¨è¿™ä¸¤ä¸ªç±»
         .. versionchanged:: 4.0
            Now passes through ``*args`` and ``**kwargs`` to the callback.
         """
@@ -582,7 +585,7 @@ class IOLoop(Configurable):
         with stack_context.NullContext():
             self.add_callback(callback, *args, **kwargs)
 
-    # future doneÖ®ºó»Øµ÷callback£¬ÆäÖĞcallbackÊÇÔÚioloopÖĞµ÷ÓÃ
+    # future doneä¹‹åå›è°ƒcallbackï¼Œå…¶ä¸­callbackæ˜¯åœ¨ioloopä¸­è°ƒç”¨
     def add_future(self, future, callback):
         """Schedules a callback on the ``IOLoop`` when the given
         `.Future` is finished.
@@ -687,7 +690,9 @@ class PollIOLoop(IOLoop):
         if hasattr(self._impl, 'fileno'):
             set_close_exec(self._impl.fileno())
         self.time_func = time_func or time.time
+        # key:fd value:(fd_obj, handler)
         self._handlers = {}
+        # key:fd value:events
         self._events = {}
         self._callbacks = []
         self._callback_lock = threading.Lock()
@@ -698,10 +703,13 @@ class PollIOLoop(IOLoop):
         self._closing = False
         self._thread_ident = None
         self._blocking_signal_threshold = None
+        # è®¡æ—¶å™¨idï¼Œæ–¹ä¾¿è®¡æ—¶å™¨è·å–è‡ªå·±æ·»åŠ åˆ°ioloopçš„é¡ºåºï¼Œç”¨äºæ¯”è¾ƒè¶…æ—¶æ—¶é—´
+        # åŠ å…¥è¶…æ—¶æ—¶é—´ç‚¹ç›¸åŒï¼Œè§¦å‘æ—¶å€™æ ¹æ®åŠ å…¥çš„é¡ºåºè¿›è¡Œå›è°ƒ
         self._timeout_counter = itertools.count()
 
         # Create a pipe that we send bogus data to when we want to wake
         # the I/O loop when it is idle
+        # å½“æ·»åŠ fdæˆ–è€…åœæ­¢ioloopæ—¶å€™ç”¨äºä»å¤šè·¯å¤ç”¨ä¸­å”¤é†’
         self._waker = Waker()
         self.add_handler(self._waker.fileno(),
                          lambda fd, events: self._waker.consume(),
@@ -756,7 +764,7 @@ class PollIOLoop(IOLoop):
             return
         old_current = getattr(IOLoop._current, "instance", None)
         IOLoop._current.instance = self
-        self._thread_ident = thread.get_ident() # ±£´æµ±Ç°Ïß³ÌID
+        self._thread_ident = thread.get_ident() # ä¿å­˜å½“å‰çº¿ç¨‹ID
         self._running = True
 
         # signal.set_wakeup_fd closes a race condition in event loops:
@@ -781,6 +789,7 @@ class PollIOLoop(IOLoop):
             # the python process on windows.
             try:
                 old_wakeup_fd = signal.set_wakeup_fd(self._waker.write_fileno())
+                # å·²ç»è®¾ç½®ï¼Œè¿˜åŸå›å»
                 if old_wakeup_fd != -1:
                     # Already set, restore previous value.  This is a little racy,
                     # but there's no clean get_wakeup_fd and in real use the
@@ -796,7 +805,8 @@ class PollIOLoop(IOLoop):
             while True:
                 # Prevent IO event starvation by delaying new callbacks
                 # to the next iteration of the event loop.
-                # self._callbacksÎªÁ¢¼´ÊÂ¼ş,Ã¿´ÎÑ­»·¾Í»áÂíÉÏ»Øµ÷
+                # self._callbacksä¸ºç«‹å³äº‹ä»¶,æ¯æ¬¡å¾ªç¯å°±ä¼šé©¬ä¸Šå›è°ƒ
+                # å¹¶ä¸”åªå›è°ƒä¸€æ¬¡å°±æ¸…ç©º
                 with self._callback_lock:
                     callbacks = self._callbacks
                     self._callbacks = []
@@ -806,31 +816,30 @@ class PollIOLoop(IOLoop):
                 # are ready, so timeouts that call add_timeout cannot
                 # schedule anything in this iteration.
                 due_timeouts = []
-                # self._timeoutsÎª¶ş²æ¶Ñ,ÓÃÓÚ¹ÜÀí¶¨Ê±Æ÷
+                # self._timeoutsä¸ºäºŒå‰å †,ç”¨äºç®¡ç†å®šæ—¶å™¨
                 if self._timeouts:
                     now = self.time()
                     while self._timeouts:
-
+                        # å®šæ—¶å™¨çš„å›è°ƒå‡½æ•°æœ‰å¯èƒ½ä¸ºNoneçš„æƒ…å†µ,å› ä¸ºç”¨æˆ·åˆ é™¤å®šæ—¶å™¨,å†…éƒ¨å¹¶ä¸ä¼š
+                        # ç«‹å³ä»äºŒå‰å †ä¸­åˆ é™¤,è€Œæ˜¯ç›´æ¥å°†å…¶å›è°ƒæ ‡è®°ä¸ºNone,å› ä¸º
+                        # ä»äºŒå‰å †ä¸­åˆ é™¤ä¼šé€ æˆä¸å¿…è¦çš„å¼€é”€
+                        # å›½å†…ç§‘å­¦è½¯ä»¶Shadowsocksæºç tcprelay.pyä¸­çš„class TCPRelayå€Ÿé‰´äº†æ­¤æ–¹æ³•
+                        # åœ¨_sweep_timeoutæ–¹æ³•ä¸­å¯ä»¥æ‰¾åˆ°,åªæ˜¯åœ¨æ­¤åŸºç¡€ä¸Šä¿®æ”¹ï¼Œä½¿ç”¨sorted listè¿›è¡Œå­˜å‚¨
+                        # é€šè¿‡mapå­˜å‚¨æ¯ä¸ªcallbackåœ¨sorted listçš„ä¸‹æ ‡
                         if self._timeouts[0].callback is None:
-                            # ¶¨Ê±Æ÷µÄ»Øµ÷º¯ÊıÓĞ¿ÉÄÜÎªNoneµÄÇé¿ö,ÒòÎªÓÃ»§É¾³ı¶¨Ê±Æ÷,ÄÚ²¿²¢²»»á
-                            # Á¢¼´´Ó¶ş²æ¶ÑÖĞÉ¾³ı,¶øÊÇÖ±½Ó½«Æä»Øµ÷±ê¼ÇÎªNone,ÒòÎª
-                            # ´Ó¶ş²æ¶ÑÖĞÉ¾³ı»áÔì³É²»±ØÒªµÄ¿ªÏú
-                            # ¹úÄÚ¿ÆÑ§Èí¼şShadowsocksÔ´Âëtcprelay.pyÖĞµÄclass TCPRelay½è¼øÁË´Ë·½·¨
-                            # ÔÚ_sweep_timeout·½·¨ÖĞ¿ÉÒÔÕÒµ½,Ö»ÊÇÔÚ´Ë»ù´¡ÉÏĞŞ¸Ä£¬Ê¹ÓÃsorted list½øĞĞ´æ´¢
-                            # Í¨¹ımap´æ´¢Ã¿¸öcallbackÔÚsorted listµÄÏÂ±ê
                             # The timeout was cancelled.  Note that the
                             # cancellation check is repeated below for timeouts
                             # that are cancelled by another timeout or callback.
                             heapq.heappop(self._timeouts)
                             self._cancellations -= 1
                         elif self._timeouts[0].deadline <= now:
-                            # ÒÑ¾­³¬Ê±µÄ¶¨Ê±Æ÷ÔİÊ±·Åµ½due_timeoutsµ±ÖĞ
+                            # å·²ç»è¶…æ—¶çš„å®šæ—¶å™¨æš‚æ—¶æ”¾åˆ°due_timeoutså½“ä¸­
                             due_timeouts.append(heapq.heappop(self._timeouts))
                         else:
                             break
 
-                    # ¼ÓÈë¶ş²æ¶ÑÖĞÒÑ±»É¾³ıµÄ¶¨Ê±Æ÷ÊıÄ¿³¬¹ı512»òÕß´óÓÚ¶ş²æ¶Ñ×ÜÊıµÄÒ»°ã
-                    # ÄÇÃ´ÖØĞÂÕûÀí¶ş²æ¶Ñ,½«É¾³ıµÄ¶¨Ê±Æ÷´Ó¶ş²æ¶ÑÒÆ³ı,È»ºóÖØĞÂ¹¹½¨¶ş²æ¶Ñ
+                    # äºŒå‰å †ä¸­å·²è¢«åˆ é™¤çš„å®šæ—¶å™¨æ•°ç›®è¶…è¿‡512æˆ–è€…å¤§äºäºŒå‰å †æ€»æ•°çš„ä¸€åŠ
+                    # é‚£ä¹ˆé‡æ–°æ•´ç†äºŒå‰å †,å°†åˆ é™¤çš„å®šæ—¶å™¨ä»äºŒå‰å †ç§»é™¤,ç„¶åé‡æ–°æ„å»ºäºŒå‰å †
                     if (self._cancellations > 512 and
                             self._cancellations > (len(self._timeouts) >> 1)):
                         # Clean up the timeout queue when it gets large and it's
@@ -838,10 +847,12 @@ class PollIOLoop(IOLoop):
                         self._cancellations = 0
                         self._timeouts = [x for x in self._timeouts
                                           if x.callback is not None]
+                        # é‡æ–°æ„å»ºäºŒå‰å †
                         heapq.heapify(self._timeouts)
-
+                # å…ˆè¿è¡Œcallback
                 for callback in callbacks:
                     self._run_callback(callback)
+                # å†è¿è¡Œcallback_timeout
                 for timeout in due_timeouts:
                     if timeout.callback is not None:
                         self._run_callback(timeout.callback)
@@ -849,10 +860,10 @@ class PollIOLoop(IOLoop):
                 # them to be freed before we go into our poll wait.
                 callbacks = callback = due_timeouts = timeout = None
 
-                # ÕâÀï»ñÈ¡ÏÂ´ÎÑ­»·³¬Ê±µÄÊ±¼ä
-                # 1. ÓĞÁ¢¼´»Øµ÷µÄº¯Êı¼´self._callbacks·Ç¿Õ,poll_timeoutÎª0
-                # 2. Èç¹ûÓĞ¶¨Ê±Æ÷´æÔÚ,´Ó¶ş²æ¶Ñ¶¥»ñÈ¡×î¶Ì³ö·¢µÄ¶¨Ê±Æ÷µÄ³¬Ê±Ê±¼ä
-                # 3. ioloopÖĞÃ»ÓĞÈÎºÎÊÂ¼ş,Ä¬ÈÏÊ¹ÓÃ_POLL_TIMEOUT
+                # è¿™é‡Œè·å–ä¸‹æ¬¡å¾ªç¯è¶…æ—¶çš„æ—¶é—´
+                # 1. æœ‰ç«‹å³å›è°ƒçš„å‡½æ•°å³self._callbackséç©º,poll_timeoutä¸º0ï¼ˆæœ‰å¯èƒ½åœ¨ä¸Šé¢å›è°ƒçš„æ—¶å€™æ·»åŠ ï¼‰
+                # 2. å¦‚æœæœ‰å®šæ—¶å™¨å­˜åœ¨,ä»äºŒå‰å †é¡¶è·å–æœ€çŸ­è§¦å‘çš„å®šæ—¶å™¨çš„è¶…æ—¶æ—¶é—´
+                # 3. ioloopä¸­æ²¡æœ‰ä»»ä½•äº‹ä»¶,é»˜è®¤ä½¿ç”¨_POLL_TIMEOUTï¼Œ3600ç§’
                 if self._callbacks:
                     # If any callbacks or timeouts called add_callback,
                     # we don't want to wait in poll() before we run them.
@@ -876,8 +887,8 @@ class PollIOLoop(IOLoop):
                     signal.setitimer(signal.ITIMER_REAL, 0, 0)
 
                 try:
-                    # self._impl´ÓÍâ²¿´«µİ½øÀ´,µ×²ã²Ù×÷ÏµÍ³IO¶àÂ·¸´ÓÃAPI
-                    # ·µ»Ø·¢ÉúµÄÊÂ¼şÁĞ±íÒÔ¼°¶ÔÓ¦µÄÊÂ¼şÀàĞÍ
+                    # self._implä»å¤–éƒ¨ä¼ é€’è¿›æ¥,åº•å±‚æ“ä½œç³»ç»ŸIOå¤šè·¯å¤ç”¨API
+                    # è¿”å›å‘ç”Ÿçš„äº‹ä»¶åˆ—è¡¨ä»¥åŠå¯¹åº”çš„äº‹ä»¶ç±»å‹
                     event_pairs = self._impl.poll(poll_timeout)
                 except Exception as e:
                     # Depending on python version and IOLoop implementation,
@@ -903,7 +914,7 @@ class PollIOLoop(IOLoop):
                     fd, events = self._events.popitem()
                     try:
                         fd_obj, handler_func = self._handlers[fd]
-                        # ÕâÀïµ÷ÓÃÓëÎÄ¼şÃèÊö·û¶ÔÓ¦µÄ»Øµ÷º¯Êı
+                        # è¿™é‡Œè°ƒç”¨ä¸æ–‡ä»¶æè¿°ç¬¦å¯¹åº”çš„å›è°ƒå‡½æ•°
                         handler_func(fd_obj, events)
                     except (OSError, IOError) as e:
                         if errno_from_exception(e) == errno.EPIPE:
@@ -933,6 +944,7 @@ class PollIOLoop(IOLoop):
         return self.time_func()
 
     def call_at(self, deadline, callback, *args, **kwargs):
+        # ç»§æ‰¿å®ç°IOLoop call_at
         timeout = _Timeout(
             deadline,
             functools.partial(stack_context.wrap(callback), *args, **kwargs),
@@ -946,7 +958,7 @@ class PollIOLoop(IOLoop):
         # http://docs.python.org/library/heapq.html).
         # If this turns out to be a problem, we could add a garbage
         # collection pass whenever there are too many dead timeouts.
-        # Ö±½Ó¸³ÖµÎªNone£¬¶ø²»ÊÇ´Ó¶ş²æ¶ÑÖĞÉ¾³ı
+        # ç›´æ¥èµ‹å€¼ä¸ºNoneï¼Œè€Œä¸æ˜¯ä»äºŒå‰å †ä¸­åˆ é™¤
         timeout.callback = None
         self._cancellations += 1
 

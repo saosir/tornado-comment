@@ -202,7 +202,7 @@ def re_unescape(s):
     """
     return _re_unescape_pattern.sub(_re_unescape_replacement, s)
 
-
+# 类似于抽象函数，可以动态配置子类，子类实现initialize来替代__init__构造函数
 class Configurable(object):
     """Base class for configurable interfaces.
 
@@ -223,6 +223,9 @@ class Configurable(object):
     `configurable_base` and `configurable_default`, and use the instance
     method `initialize` instead of ``__init__``.
     """
+	# 子类需要继承configurable_base 和 configurable_default
+	# configurable_base 返回抽象类，configurable_default返回默认的impl类
+	# 通过configure可以修改默认的impl类
     __impl_class = None  # type: type
     __impl_kwargs = None  # type: dict
 
@@ -230,10 +233,13 @@ class Configurable(object):
         base = cls.configurable_base()
         init_kwargs = {}
         if cls is base:
+			# 是基类的话获取对应的实现类，然后实例化，换句话说就是调用的是工厂函数
+			# 工厂函数可以根据配置的底层实现类来创建对象
             impl = cls.configured_class()
             if base.__impl_kwargs:
                 init_kwargs.update(base.__impl_kwargs)
         else:
+			# 调用的是实现类的构造函数，直接初始化
             impl = cls
         init_kwargs.update(kwargs)
         instance = super(Configurable, cls).__new__(impl)
@@ -250,10 +256,12 @@ class Configurable(object):
         This will normally return the class in which it is defined.
         (which is *not* necessarily the same as the cls classmethod parameter).
         """
+		# 最基的类
         raise NotImplementedError()
 
     @classmethod
     def configurable_default(cls):
+		# 这里返回实现类impl_class
         """Returns the implementation class to be used if none is configured."""
         raise NotImplementedError()
 
@@ -274,6 +282,7 @@ class Configurable(object):
         to the constructor.  This can be used to set global defaults for
         some parameters.
         """
+		# 手动设置实现类与初始化构造函数参数
         base = cls.configurable_base()
         if isinstance(impl, (unicode_type, bytes)):
             impl = import_object(impl)
@@ -285,7 +294,9 @@ class Configurable(object):
     @classmethod
     def configured_class(cls):
         """Returns the currently configured class."""
+		# 得到基类对应的实现类
         base = cls.configurable_base()
+		# 首次设置类的子类
         if cls.__impl_class is None:
             base.__impl_class = cls.configurable_default()
         return base.__impl_class
