@@ -132,6 +132,11 @@ class BaseIOStream(object):
 
     Subclasses must implement `fileno`, `close_fd`, `write_to_fd`,
     `read_from_fd`, and optionally `get_fd_error`.
+
+    支持非阻塞文件与socket读写的类，提供非阻塞的write和read_*()系列函数，这些函数都
+    有一个可选参数callback，如果不提供callback参数，函数返回一个Future类。当操作完成
+    之后，callback将会被调用或者Future被处理设置为Done状态，通过Future的result可以
+    获得执行结果
     """
     def __init__(self, io_loop=None, max_buffer_size=None,
                  read_chunk_size=None, max_write_buffer_size=None):
@@ -151,6 +156,7 @@ class BaseIOStream(object):
            ``read_chunk_size`` to 64KB.
         """
         self.io_loop = io_loop or ioloop.IOLoop.current()
+        # 最大缓冲区大小，超过此值报错
         self.max_buffer_size = max_buffer_size or 104857600
         # A chunk size that is too close to max_buffer_size can cause
         # spurious failures.
@@ -158,19 +164,24 @@ class BaseIOStream(object):
                                    self.max_buffer_size // 2)
         self.max_write_buffer_size = max_write_buffer_size
         self.error = None
+        # 从socket中读到的数据暂时存放此处
         self._read_buffer = collections.deque()
         self._write_buffer = collections.deque()
+        # _read_buffer中数据字节数
         self._read_buffer_size = 0
+        # _write_buffer中数据字节数
         self._write_buffer_size = 0
         self._write_buffer_frozen = False
         self._read_delimiter = None
         self._read_regex = None
-        self._read_max_bytes = None
+        self._read_max_bytes = Noe
         self._read_bytes = None
         self._read_partial = False
         self._read_until_close = False
         self._read_callback = None
         self._read_future = None
+        # 流式读取，设置此回调有数据返回就换马上回调通知，不会积压数据，在
+        # 调用read_*()函数的时候会有stream_callback参数
         self._streaming_callback = None
         self._write_callback = None
         self._write_future = None
@@ -233,7 +244,6 @@ class BaseIOStream(object):
         that came before it.  If a callback is given, it will be run
         with the data as an argument; if not, this method returns a
         `.Future`.
-
         If ``max_bytes`` is not None, the connection will be closed
         if more than ``max_bytes`` bytes have been read and the regex is
         not satisfied.
@@ -242,6 +252,9 @@ class BaseIOStream(object):
             Added the ``max_bytes`` argument.  The ``callback`` argument is
             now optional and a `.Future` will be returned if it is omitted.
         """
+        # callback的参数有一个data参数
+        # max_bytes是指超过这个数量的data里面还未满足regex匹配，那么就会关闭这个连接，
+        # 不是指读取到max_bytes就返回数据给用户
         future = self._set_read_callback(callback)
         self._read_regex = re.compile(regex)
         self._read_max_bytes = max_bytes
@@ -307,6 +320,8 @@ class BaseIOStream(object):
         .. versionchanged:: 4.0
             Added the ``partial`` argument.  The callback argument is now
             optional and a `.Future` will be returned if it is omitted.
+        读取num_bytes大小数据，流式读streaming_callback当数据到来立即调用，最后一个
+        数据包为空数据包，设置了callback当数据满足num_bytes大小才通知
         """
         future = self._set_read_callback(callback)
         assert isinstance(num_bytes, numbers.Integral)
@@ -623,8 +638,9 @@ class BaseIOStream(object):
                 # try to read it.
                 if self._read_to_buffer() == 0:
                     break
-
-                self._run_streaming_callback() # 流式callback，有数据就一直消耗，如果将iostream设置为流式，性能会提升
+                # 流式callback，有数据就一直消耗，如果将iostream设置为流式，性能会提升
+                self._run_streaming_callback()
+                # 如果为流式读，那么下面的self._read_buffer_size一直为0
 
                 # If we've read all the bytes we can use, break out of
                 # this loop.  We can't just call read_from_buffer here
@@ -642,17 +658,19 @@ class BaseIOStream(object):
                 # size has doubled.
                 # 一直从sockfd中获取缓冲区数据，直到缓冲区的数据达到我们的要求位置
                 if self._read_buffer_size >= next_find_pos:
-                    # 大于才有可能满足需求
-                    pos = self._find_read_pos() # 从现有的缓冲区数据中找一下满足需求的pos
+                    # 大于才有可能满足需求，从现有的缓冲区数据中找一下满足需求的pos
+                    pos = self._find_read_pos()
                     if pos is not None:
                         return pos
-                    next_find_pos = self._read_buffer_size * 2  # 没有找到，继续从sockfd获取数据，指数增长
+                    # 没有找到，继续从sockfd获取数据，指数增长
+                    next_find_pos = self._read_buffer_size * 2
             return self._find_read_pos()
         finally:
             self._pending_callbacks -= 1
 
     def _handle_read(self):
         try:
+            # 循环读取
             pos = self._read_to_buffer_loop()
         except UnsatisfiableReadError:
             raise
@@ -674,7 +692,7 @@ class BaseIOStream(object):
         else:
             self._read_future = TracebackFuture()
         return self._read_future
-    # 从缓冲区处理 =size= 字节数据并调用callback进行通知
+    # 从缓冲区处理 size 字节数据并调用callback进行通知
     def _run_read_callback(self, size, streaming):
         if streaming:
             callback = self._streaming_callback
@@ -682,7 +700,10 @@ class BaseIOStream(object):
             callback = self._read_callback
             self._read_callback = self._streaming_callback = None
             if self._read_future is not None:
+                # 满足条件set_result
+                # 同一时间read_callback和read_future只有一个值有效
                 assert callback is None
+                # 设置future成功
                 future = self._read_future
                 self._read_future = None
                 future.set_result(self._consume(size))
@@ -710,7 +731,8 @@ class BaseIOStream(object):
             return
         self._check_closed()
         try:
-            pos = self._read_to_buffer_loop() # 一直从sockfd中读数据,直到满足要求
+            # 一直从sockfd中读数据,直到满足要求
+            pos = self._read_to_buffer_loop()
         except Exception:
             # If there was an in _read_to_buffer, we called close() already,
             # but couldn't run the close callback because of _pending_callbacks.
@@ -736,10 +758,13 @@ class BaseIOStream(object):
         to read (i.e. the read returns EWOULDBLOCK or equivalent).  On
         error closes the socket and raises an exception.
         """
+        # 从socket读取数据
         while True:
             try:
+                # 读取数据，即使中断发生，直到读取到数据才跳出循环
                 chunk = self.read_from_fd()
             except (socket.error, IOError, OSError) as e:
+                # 被中断，继续读
                 if errno_from_exception(e) == errno.EINTR:
                     continue
                 # ssl.SSLError is a subclass of socket.error
@@ -757,16 +782,21 @@ class BaseIOStream(object):
         self._read_buffer.append(chunk)
         self._read_buffer_size += len(chunk)
         if self._read_buffer_size > self.max_buffer_size:
+            # 超过最大缓冲区大小
             gen_log.error("Reached maximum read buffer size")
             self.close()
             raise StreamBufferFullError("Reached maximum read buffer size")
         return len(chunk)
 
-    # 会调用回调函数处理数据
     def _run_streaming_callback(self):
+        # 确认是否为流式读取，缓冲区是否有数据
         if self._streaming_callback is not None and self._read_buffer_size:
+            # 消耗完全部数据
             bytes_to_consume = self._read_buffer_size
+            # 用户设置了读取字节大小
             if self._read_bytes is not None:
+                # 流式读取一直读并递减read_bytes回调通知，最后返回一个空数据说明
+                # 读取结束
                 bytes_to_consume = min(self._read_bytes, bytes_to_consume)
                 self._read_bytes -= bytes_to_consume
             self._run_read_callback(bytes_to_consume, True)
@@ -777,11 +807,11 @@ class BaseIOStream(object):
         The argument is either a position in the read buffer or None,
         as returned by _find_read_pos.
         """
+        # 满足读请求，从缓冲区取出pos数据并调用回调通知
         self._read_bytes = self._read_delimiter = self._read_regex = None
         self._read_partial = False
         self._run_read_callback(pos, False)
 
-    # 尝试在缓冲区中找一个满足读请求的位置
     def _find_read_pos(self):
         """Attempts to find a position in the read buffer that satisfies
         the currently-pending read.
@@ -789,12 +819,15 @@ class BaseIOStream(object):
         Returns a position in the buffer if the current read can be satisfied,
         or None if it cannot.
         """
+        # 尝试在缓冲区中找一个满足读请求的位置
         if (self._read_bytes is not None and
             (self._read_buffer_size >= self._read_bytes or
              (self._read_partial and self._read_buffer_size > 0))):
             num_bytes = min(self._read_bytes, self._read_buffer_size)
+            # 设置了读字节大小，buffer_size大于read_bytes或者分片读取
             return num_bytes
         elif self._read_delimiter is not None:
+            # 分隔符
             # Multi-byte delimiters (e.g. '\r\n') may straddle two
             # chunks in the read buffer, so we can't easily find them
             # without collapsing the buffer.  However, since protocols
@@ -810,13 +843,17 @@ class BaseIOStream(object):
                         delimiter_len = len(self._read_delimiter)
                         self._check_max_bytes(self._read_delimiter,
                                               loc + delimiter_len)
+                        # 满足
                         return loc + delimiter_len
+                    # 后面没有数据
                     if len(self._read_buffer) == 1:
                         break
+                    # 合并数据
                     _double_prefix(self._read_buffer)
                 self._check_max_bytes(self._read_delimiter,
                                       len(self._read_buffer[0]))
         elif self._read_regex is not None:
+            # 算法和上面相同
             if self._read_buffer:
                 while True:
                     m = self._read_regex.search(self._read_buffer[0])
@@ -938,6 +975,7 @@ class BaseIOStream(object):
             # connection has been closed, so there can be no future events
             return
         if self._state is None:
+            # 第一次添加
             self._state = ioloop.IOLoop.ERROR | state
             with stack_context.NullContext():
                 self.io_loop.add_handler(
@@ -1532,6 +1570,7 @@ def _double_prefix(deque):
     """Grow by doubling, but don't split the second chunk just because the
     first one is small.
     """
+    # 保证第二块不会被分割
     new_len = max(len(deque[0]) * 2,
                   (len(deque[0]) + len(deque[1])))
     _merge_prefix(deque, new_len)

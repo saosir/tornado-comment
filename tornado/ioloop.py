@@ -973,6 +973,7 @@ class PollIOLoop(IOLoop):
                 self._callbacks.append(functools.partial(
                     stack_context.wrap(callback), *args, **kwargs))
                 if list_empty:
+                    # 在其他线程中添加callback需要唤醒，不然可能会持续睡眠
                     # If we're not in the IOLoop's thread, and we added the
                     # first callback to an empty list, we may need to wake it
                     # up (it may wake up on its own, but an occasional extra
