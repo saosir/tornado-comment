@@ -262,7 +262,7 @@ class Future(object):
         `add_done_callback` directly.
         """
         if self._done:
-            fn(self) # �ɹ���������
+            fn(self)
         else:
             self._callbacks.append(fn)
 
@@ -272,6 +272,7 @@ class Future(object):
         It is undefined to call any of the ``set`` methods more than once
         on the same object.
         """
+		# set_result就会调用所有回调，将callback放入ioloop运行
         self._result = result
         self._set_done()
 
@@ -317,7 +318,6 @@ class Future(object):
 
     def _set_done(self):
         self._done = True
-        # �ɹ�֮��������лص�֪ͨ
         for cb in self._callbacks:
             try:
                 cb(self)
