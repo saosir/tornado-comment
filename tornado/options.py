@@ -188,6 +188,18 @@ class OptionParser(object):
 
     def define(self, name, default=None, type=None, help=None, metavar=None,
                multiple=False, group=None, callback=None):
+        # 定义一个命令行参数
+
+        # 参数类型type可以为 str float int datetime or timedelta，如果不指定自动从
+        # default 得到对应参数类型，如果 multiple 指定为 True ， 参数则为列表形式
+
+        # 对于 multiple 为 True，参数类型为int，传入的命令参数形式可以为 x:y，该命令
+        # 自动转换为 range(x, y)
+
+        # help 和 metavar 参数方便生成命令行帮助文档，得到的形式如:
+        # -name=METAVAR      help string
+        # group 可以方便的将各个参数进行分类
+        # 如果设置了callback参数，当命令行参数改变，callback会被调用
         """Defines a new command line option.
 
         If ``type`` is given (one of str, float, int, datetime, or timedelta)
@@ -286,6 +298,7 @@ class OptionParser(object):
                 self.print_help()
                 raise Error('Unrecognized command line option: %r' % name)
             option = self._options[name]
+            # 没有等号就是bool类型
             if not equals:
                 if option.type == bool:
                     value = "true"
@@ -313,6 +326,7 @@ class OptionParser(object):
            The special variable ``__file__`` is available inside config
            files, specifying the absolute path to the config file itself.
         """
+        # 执行python文件
         config = {'__file__': os.path.abspath(path)}
         with open(path, 'rb') as f:
             exec_in(native_str(f.read()), config, config)
@@ -361,6 +375,7 @@ class OptionParser(object):
 
     def add_parse_callback(self, callback):
         """Adds a parse callback, to be invoked when option parsing is done."""
+        # 每次解析完都被调用
         self._parse_callbacks.append(stack_context.wrap(callback))
 
     def run_parse_callbacks(self):
@@ -437,6 +452,7 @@ class _Option(object):
         return self.default if self._value is _Option.UNSET else self._value
 
     def parse(self, value):
+        # 得到对应类型的解析函数
         _parse = {
             datetime.datetime: self._parse_datetime,
             datetime.timedelta: self._parse_timedelta,
@@ -445,6 +461,7 @@ class _Option(object):
         }.get(self.type, self.type)
         if self.multiple:
             self._value = []
+            # 命令格式split(",")
             for part in value.split(","):
                 if issubclass(self.type, numbers.Integral):
                     # allow ranges of the form X:Y (inclusive at both ends)

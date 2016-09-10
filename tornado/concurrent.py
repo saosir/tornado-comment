@@ -272,7 +272,7 @@ class Future(object):
         It is undefined to call any of the ``set`` methods more than once
         on the same object.
         """
-		# set_result就会调用所有回调，将callback放入ioloop运行
+        # set_result就会调用所有回调，将callback放入ioloop运行
         self._result = result
         self._set_done()
 
@@ -354,9 +354,11 @@ def is_future(x):
 
 
 class DummyExecutor(object):
+    # 同步执行的executor
     def submit(self, fn, *args, **kwargs):
         future = TracebackFuture()
         try:
+            # 直接调用fn返回结果
             future.set_result(fn(*args, **kwargs))
         except Exception:
             future.set_exc_info(sys.exc_info())
@@ -369,6 +371,7 @@ dummy_executor = DummyExecutor()
 
 
 def run_on_executor(*args, **kwargs):
+    # 修饰某个函数，让此函数在execut中执行，完成之后可以通过callback或者future方式进行通知
     """Decorator to run a synchronous method asynchronously on an executor.
 
     The decorated method may be called with a ``callback`` keyword
@@ -377,6 +380,8 @@ def run_on_executor(*args, **kwargs):
     The `.IOLoop` and executor to be used are determined by the ``io_loop``
     and ``executor`` attributes of ``self``. To use different attributes,
     pass keyword arguments to the decorator::
+    self中的io_loop和excutor会被使用，如果其名称不是 io_loop 和 executor ， 可以
+    通过如下方法特别指定
 
         @run_on_executor(executor='_thread_pool')
         def foo(self):
@@ -394,6 +399,7 @@ def run_on_executor(*args, **kwargs):
             callback = kwargs.pop("callback", None)
             future = getattr(self, executor).submit(fn, self, *args, **kwargs)
             if callback:
+                # 如果有callback，会将器添加到ioloop中执行以便通知用户
                 getattr(self, io_loop).add_future(
                     future, lambda future: callback(future.result()))
             return future
@@ -401,9 +407,11 @@ def run_on_executor(*args, **kwargs):
     if args and kwargs:
         raise ValueError("cannot combine positional and keyword args")
     if len(args) == 1:
+        # 作为修饰器没有参数调用，返回wrapper修饰函数
         return run_on_executor_decorator(args[0])
     elif len(args) != 0:
         raise ValueError("expected 1 argument, got %d", len(args))
+    # 作为修饰器有参数调用，返回run_on_executor_decorator修饰函数
     return run_on_executor_decorator
 
 

@@ -321,6 +321,7 @@ class Resolver(Configurable):
         return BlockingResolver
 
     def resolve(self, host, port, family=socket.AF_UNSPEC, callback=None):
+        # 默认被BlockingResolver替代
         """Resolves an address.
 
         The ``host`` argument is a string which may be a hostname or a
@@ -363,6 +364,7 @@ class ExecutorResolver(Resolver):
             self.executor = executor
             self.close_executor = close_executor
         else:
+            # dummy_executor同步阻塞
             self.executor = dummy_executor
             self.close_executor = False
 
@@ -423,6 +425,7 @@ class ThreadedResolver(ExecutorResolver):
     def _create_threadpool(cls, num_threads):
         pid = os.getpid()
         if cls._threadpool_pid != pid:
+            # 防止fork之后，子进程使用父进程的线程池
             # Threads cannot survive after a fork, so if our pid isn't what it
             # was when we created the pool then delete it.
             cls._threadpool = None
