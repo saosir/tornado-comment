@@ -34,9 +34,8 @@ except ImportError:
     # ssl is not available on Google App Engine.
     ssl = None
 
-# ³ıÈ¥SSL£¬ÆäËû¶¼±È½Ï¼òµ¥£¬ÈİÒ×Àí½â
-# `TCPServer`ÊôÓÚ³éÏóÀà£¬×ÓÀàĞèÒªÊµÏÖ`handle_stream`Ö§³Ö¼àÌı¶à¸öµØÖ·£¬Ö§³ÖIPV4ºÍIPV6£¬Ö§³Ö
-# ¶à½ø³Ì£¬ÔÚµ÷ÓÃstart(self, num_processes=1)Ê±ºòÖ¸¶¨
+# `TCPServer`å±äºæŠ½è±¡ç±»ï¼Œå­ç±»éœ€è¦å®ç°`handle_stream`æ”¯æŒç›‘å¬å¤šä¸ªåœ°å€ï¼Œæ”¯æŒIPV4å’ŒIPV6ï¼Œæ”¯æŒ
+# å¤šè¿›ç¨‹ï¼Œåœ¨è°ƒç”¨start(self, num_processes=1)æ—¶å€™æŒ‡å®š
 
 class TCPSerwver(object):
     r"""A non-blocking, single-threaded TCP server.
@@ -140,7 +139,7 @@ class TCPSerwver(object):
         """
         if self.io_loop is None:
             self.io_loop = IOLoop.current()
-        # ½«socket·Åµ½ioloopÖĞ½øĞĞ»Øµ÷,ÓĞÁ¬½Óµ½À´»Øµ÷
+        # å°†socketæ”¾åˆ°ioloopä¸­è¿›è¡Œå›è°ƒ,æœ‰è¿æ¥åˆ°æ¥å›è°ƒ
         # `_handle_connection(self, connection, address)`
         for sock in sockets:
             self._sockets[sock.fileno()] = sock
@@ -261,9 +260,9 @@ class TCPSerwver(object):
                     return connection.close()
                 else:
                     raise
-        # IOStream ºÍ SSLIOStreamÊÇ±È½Ï´óµÄÀà£¬ÔÚiostream.pyÎÄ¼şÖĞ¶¨Òå,
-        # °ü×°Ã¿¸ösocketÁ¬½Ó(Õâ¿ÉÄÜ²»ÊÇºÜ×¼È·£¬ÒòÎªIOÊÂ¼ş²»Ò»¶¨ÊÇsocket,
-        # ÔİÊ±°ÑÕû¸ö¿ò¼Üµ±³ÉÍøÂçIOÀ´Àí½â¿ò¼Ü´úÂë)
+        # IOStream å’Œ SSLIOStreamæ˜¯æ¯”è¾ƒå¤§çš„ç±»ï¼Œåœ¨iostream.pyæ–‡ä»¶ä¸­å®šä¹‰,
+        # åŒ…è£…æ¯ä¸ªsocketè¿æ¥(è¿™å¯èƒ½ä¸æ˜¯å¾ˆå‡†ç¡®ï¼Œå› ä¸ºIOäº‹ä»¶ä¸ä¸€å®šæ˜¯socket,
+        # æš‚æ—¶æŠŠæ•´ä¸ªæ¡†æ¶å½“æˆç½‘ç»œIOæ¥ç†è§£æ¡†æ¶ä»£ç )
         try:
             if self.ssl_options is not None:
                 stream = SSLIOStream(connection, io_loop=self.io_loop,
