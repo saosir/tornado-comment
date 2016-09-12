@@ -147,9 +147,10 @@ def fork_processes(num_processes, max_restarts=100):
     for i in range(num_processes):
         id = start_child(i)
         if id is not None:
+            # 子进程返回
             return id
     num_restarts = 0
-    # master�ȴ�����child�ӽ��̽���
+    # master等待所有child子进程结束
     while children:
         try:
             pid, status = os.wait()
@@ -159,6 +160,7 @@ def fork_processes(num_processes, max_restarts=100):
             raise
         if pid not in children:
             continue
+        # 子进程退出
         id = children.pop(pid)
         if os.WIFSIGNALED(status):
             gen_log.warning("child %d (pid %d) killed by signal %d, restarting",
@@ -167,8 +169,10 @@ def fork_processes(num_processes, max_restarts=100):
             gen_log.warning("child %d (pid %d) exited with status %d, restarting",
                             id, pid, os.WEXITSTATUS(status))
         else:
+            # 子进程自己退出
             gen_log.info("child %d (pid %d) exited normally", id, pid)
             continue
+        # 重启子进程
         num_restarts += 1
         if num_restarts > max_restarts:
             raise RuntimeError("Too many child restarts, giving up")
@@ -204,6 +208,7 @@ class Subprocess(object):
 
     .. versionchanged:: 4.1
        The ``io_loop`` argument is deprecated.
+    类似 subprocess.Popen 创建子进程，但是能够异步处理子进程结束通知
     """
     STREAM = object()
 

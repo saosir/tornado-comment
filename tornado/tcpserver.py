@@ -34,19 +34,23 @@ except ImportError:
     # ssl is not available on Google App Engine.
     ssl = None
 
-# `TCPServer`属于抽象类，子类需要实现`handle_stream`支持监听多个地址，支持IPV4和IPV6，支持
-# 多进程，在调用start(self, num_processes=1)时候指定
+# TCPServer属于抽象类，子类需要实现handle_stream，当有连接到来会回调通知，
+# 支持监听多个地址，
+# 支持IPV4和IPV6，
+# 支持多进程，在调用start(self, num_processes=1)时候指定
 
 class TCPSerwver(object):
     r"""A non-blocking, single-threaded TCP server.
 
     To use `TCPServer`, define a subclass which overrides the `handle_stream`
     method.
+    使用 TCPServer ， 子类需要覆盖 handle_stream 函数
 
     To make this server serve SSL traffic, send the ``ssl_options`` keyword
     argument with an `ssl.SSLContext` object. For compatibility with older
     versions of Python ``ssl_options`` may also be a dictionary of keyword
     arguments for the `ssl.wrap_socket` method.::
+    让server支持ssl，需要在创建的时候添加 ssl_options 关键字参数，类型为 ssl.SSLContext
 
        ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
        ssl_ctx.load_cert_chain(os.path.join(data_dir, "mydomain.crt"),
@@ -124,6 +128,7 @@ class TCPSerwver(object):
         `listen` takes effect immediately; it is not necessary to call
         `TCPServer.start` afterwards.  It is, however, necessary to start
         the `.IOLoop`.
+        可以在 TCPServer.start 之前多次调用 listen 监听多个端口和地址
         """
         sockets = bind_sockets(port, address=address)
         self.add_sockets(sockets)
@@ -139,8 +144,7 @@ class TCPSerwver(object):
         """
         if self.io_loop is None:
             self.io_loop = IOLoop.current()
-        # 将socket放到ioloop中进行回调,有连接到来回调
-        # `_handle_connection(self, connection, address)`
+        # 将socket放到ioloop中进行回调,有连接到来回调 _handle_connection
         for sock in sockets:
             self._sockets[sock.fileno()] = sock
             add_accept_handler(sock, self._handle_connection,
@@ -217,6 +221,7 @@ class TCPSerwver(object):
 
     def handle_stream(self, stream, address):
         """Override to handle a new `.IOStream` from an incoming connection.
+        覆盖此方法处理新到来的连接，该方法可以是 coroutine
 
         This method may be a coroutine; if so any exceptions it raises
         asynchronously will be logged. Accepting of incoming connections
@@ -261,8 +266,6 @@ class TCPSerwver(object):
                 else:
                     raise
         # IOStream 和 SSLIOStream是比较大的类，在iostream.py文件中定义,
-        # 包装每个socket连接(这可能不是很准确，因为IO事件不一定是socket,
-        # 暂时把整个框架当成网络IO来理解框架代码)
         try:
             if self.ssl_options is not None:
                 stream = SSLIOStream(connection, io_loop=self.io_loop,
