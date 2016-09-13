@@ -1038,6 +1038,8 @@ class PeriodicCallback(object):
 
     `start` must be called after the `PeriodicCallback` is created.
 
+    定时回到任务
+
     .. versionchanged:: 4.1
        The ``io_loop`` argument is deprecated.
     """

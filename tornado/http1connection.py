@@ -148,19 +148,23 @@ class HTTP1Connection(httputil.HTTPConnection):
         """
         if self.params.decompress:
             delegate = _GzipMessageDelegate(delegate, self.params.chunk_size)
+        # 了解一下带 gen.coroutine 修饰的函数如何调用
         return self._read_message(delegate)
 
     @gen.coroutine
     def _read_message(self, delegate):
         need_delegate_close = False
         try:
+            # 读取http头部
             header_future = self.stream.read_until_regex(
                 b"\r?\n\r?\n",
                 max_bytes=self.params.max_header_size)
             if self.params.header_timeout is None:
+                # yield语句，读取成功才返回
                 header_data = yield header_future
             else:
                 try:
+                    # 有超时选项，需要使用 gen.with_timeout
                     header_data = yield gen.with_timeout(
                         self.stream.io_loop.time() + self.params.header_timeout,
                         header_future,
@@ -170,10 +174,12 @@ class HTTP1Connection(httputil.HTTPConnection):
                     self.close()
                     raise gen.Return(False)
             start_line, headers = self._parse_headers(header_data)
+            # 客户端和服务端分开解析
             if self.is_client:
                 start_line = httputil.parse_response_start_line(start_line)
                 self._response_start_line = start_line
             else:
+                # 服务端解析的是 request ， 虽然 函数名是 read_response
                 start_line = httputil.parse_request_start_line(start_line)
                 self._request_start_line = start_line
                 self._request_headers = headers
@@ -258,6 +264,7 @@ class HTTP1Connection(httputil.HTTPConnection):
                 with _ExceptionLoggingContext(app_log):
                     delegate.on_connection_close()
             self._clear_callbacks()
+        # 返回 True 继续运行
         raise gen.Return(True)
 
     def _clear_callbacks(self):
@@ -692,6 +699,7 @@ class HTTP1ServerConnection(object):
         :arg delegate: a `.HTTPServerConnectionDelegate`
         """
         assert isinstance(delegate, httputil.HTTPServerConnectionDelegate)
+        # 得到一个gen.coroutine 返回的Future
         self._serving_future = self._server_request_loop(delegate)
         # Register the future on the IOLoop so its errors get logged.
         self.stream.io_loop.add_future(self._serving_future,
@@ -701,10 +709,13 @@ class HTTP1ServerConnection(object):
     def _server_request_loop(self, delegate):
         try:
             while True:
+                # 服务端的 http connection
                 conn = HTTP1Connection(self.stream, False,
                                        self.params, self.context)
+                # 委托 HttpServer 继承 HTTPServerConnectionDelegate.start_request
                 request_delegate = delegate.start_request(self, conn) # HttpServer返回 _ServerRequestAdapter->HTTPMessageDelegate
                 try:
+                    # 函数名虽然是 read_response , 但是最后调用 parse_request_start_line
                     ret = yield conn.read_response(request_delegate)
                 except (iostream.StreamClosedError,
                         iostream.UnsatisfiableReadError):
@@ -719,6 +730,7 @@ class HTTP1ServerConnection(object):
                     return
                 if not ret:
                     return
+                # 为什么要 yield 一个 moment？
                 yield gen.moment
         finally:
             delegate.on_close(self)

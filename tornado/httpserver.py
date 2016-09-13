@@ -153,6 +153,7 @@ class HTTPServer(TCPServer, Configurable,
         TCPServer.__init__(self, io_loop=io_loop, ssl_options=ssl_options,
                            max_buffer_size=max_buffer_size,
                            read_chunk_size=chunk_size)
+        # 所有的tcp连接
         self._connections = set()
 
     @classmethod
@@ -179,6 +180,7 @@ class HTTPServer(TCPServer, Configurable,
         conn.start_serving(self)
 
     def start_request(self, server_conn, request_conn):
+        # HTTP1ServerConnection HTTP1Connection
         return _ServerRequestAdapter(self, server_conn, request_conn) # HTTPMessageDelegate
 
     def on_close(self, server_conn):

@@ -241,6 +241,8 @@ def coroutine(func, replace_callback=True):
        `.IOLoop.run_sync` for top-level calls, or passing the `.Future`
        to `.IOLoop.add_future`.
 
+    用于修饰异步生成器函数，调用被修饰函数会返回一个future，当该future结束表示
+    生成器函数调用结束
     """
     return _make_coroutine_wrapper(func, replace_callback=True)
 
@@ -301,6 +303,7 @@ def _make_coroutine_wrapper(func, replace_callback):
                 else:
                     Runner(result, future, yielded)
                 try:
+                    # 进入Runner，返回
                     return future
                 finally:
                     # Subtle memory optimization: if next() raised an exception,
@@ -1036,6 +1039,8 @@ class Runner(object):
                                 'stack_context inconsistency (probably caused '
                                 'by yield within a "with StackContext" block)'))
                 except (StopIteration, Return) as e:
+                    # 捕捉到StopIteration 或者 Return 异常，说明 self.gen生成器
+                    # 结束，Return 异常一般由用户调用 raise Return(True)
                     self.finished = True
                     self.future = _null_future
                     if self.pending_callbacks and not self.had_exception:
@@ -1046,6 +1051,7 @@ class Runner(object):
                         raise LeakedCallbackError(
                             "finished without waiting for callbacks %r" %
                             self.pending_callbacks)
+                    # 如果是 Return 异常设置返回值
                     self.result_future.set_result(_value_from_stopiteration(e))
                     self.result_future = None
                     self._deactivate_stack_context()
@@ -1057,9 +1063,9 @@ class Runner(object):
                     self.result_future = None
                     self._deactivate_stack_context()
                     return
-				# 返回True说明yielded已经完成done，继续运行返回结果给上层，如果yielded
-				# 还在等待Future完成，那么直接返回，handle_yield已经将yielded放到ioloop
-				# 进行处理，完成后回调run运行
+                # 返回True说明yielded已经完成done，继续运行返回结果给上层，如果yielded
+                # 还在等待Future完成，那么直接返回，handle_yield已经将yielded放到ioloop
+                # 进行处理，完成后回调run运行
                 if not self.handle_yield(yielded):
                     return
         finally:
@@ -1105,7 +1111,7 @@ class Runner(object):
             else:
                 start_yield_point()
         else:
-			# Future情况，为r = yield fetch()之类返回的Future
+            # Future情况，为r = yield fetch()之类返回的Future
             try:
                 self.future = convert_yielded(yielded)
             except BadYieldError:
