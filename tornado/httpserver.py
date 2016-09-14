@@ -139,6 +139,7 @@ class HTTPServer(TCPServer, Configurable,
                    chunk_size=None, max_header_size=None,
                    idle_connection_timeout=None, body_timeout=None,
                    max_body_size=None, max_buffer_size=None):
+        # 回调通知，web.py中传递进来的是 Application
         self.request_callback = request_callback
         self.no_keep_alive = no_keep_alive
         self.xheaders = xheaders
@@ -284,10 +285,12 @@ class _ServerRequestAdapter(httputil.HTTPMessageDelegate):
 
     def finish(self):
         if self.delegate is None:
+            # 回调通知
             self.request.body = b''.join(self._chunks)
             self.request._parse_body()
             self.server.request_callback(self.request)
         else:
+            # 通知完成
             self.delegate.finish()
         self._cleanup()
 

@@ -709,7 +709,7 @@ class HTTP1ServerConnection(object):
     def _server_request_loop(self, delegate):
         try:
             while True:
-                # 服务端的 http connection
+                # 参数 False 表示服务端的 http connection
                 conn = HTTP1Connection(self.stream, False,
                                        self.params, self.context)
                 # 委托 HttpServer 继承 HTTPServerConnectionDelegate.start_request

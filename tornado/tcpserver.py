@@ -39,7 +39,7 @@ except ImportError:
 # 支持IPV4和IPV6，
 # 支持多进程，在调用start(self, num_processes=1)时候指定
 
-class TCPSerwver(object):
+class TCPServer(object):
     r"""A non-blocking, single-threaded TCP server.
 
     To use `TCPServer`, define a subclass which overrides the `handle_stream`
