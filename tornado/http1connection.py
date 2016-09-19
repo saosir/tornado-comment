@@ -672,6 +672,7 @@ class HTTP1ServerConnection(object):
         :arg context: an opaque application-defined object that is accessible
             as ``connection.context``
         """
+        # 用于处理一个http请求
         self.stream = stream
         if params is None:
             params = HTTP1ConnectionParameters()
@@ -712,10 +713,12 @@ class HTTP1ServerConnection(object):
                 # 参数 False 表示服务端的 http connection
                 conn = HTTP1Connection(self.stream, False,
                                        self.params, self.context)
-                # 委托 HttpServer 继承 HTTPServerConnectionDelegate.start_request
-                request_delegate = delegate.start_request(self, conn) # HttpServer返回 _ServerRequestAdapter->HTTPMessageDelegate
+                # 参数是 HttpServer，继承 HTTPServerConnectionDelegate.start_request
+                #返回 _ServerRequestAdapter
+                request_delegate = delegate.start_request(self, conn)
                 try:
                     # 函数名虽然是 read_response , 但是最后调用 parse_request_start_line
+					# 处理一个http客户端的请求
                     ret = yield conn.read_response(request_delegate)
                 except (iostream.StreamClosedError,
                         iostream.UnsatisfiableReadError):

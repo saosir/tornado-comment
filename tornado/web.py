@@ -1758,6 +1758,7 @@ class Application(httputil.HTTPServerConnectionDelegate):
     """
     def __init__(self, handlers=None, default_host="", transforms=None,
                  **settings):
+        # 是否压缩
         if transforms is None:
             self.transforms = []
             if settings.get("compress_response") or settings.get("gzip"):
@@ -1775,6 +1776,7 @@ class Application(httputil.HTTPServerConnectionDelegate):
         self.ui_methods = {}
         self._load_ui_modules(settings.get("ui_modules", {}))
         self._load_ui_methods(settings.get("ui_methods", {}))
+        # 静态资源
         if self.settings.get("static_path"):
             path = self.settings["static_path"]
             handlers = list(handlers or [])
@@ -1786,6 +1788,7 @@ class Application(httputil.HTTPServerConnectionDelegate):
             static_handler_args['path'] = path
             for pattern in [re.escape(static_url_prefix) + r"(.*)",
                             r"/(favicon\.ico)", r"/(robots\.txt)"]:
+                # 最头部
                 handlers.insert(0, (pattern, static_handler_class,
                                     static_handler_args))
         if handlers:
@@ -1844,13 +1847,17 @@ class Application(httputil.HTTPServerConnectionDelegate):
         # in the list, so insert new groups just before it.
         # 手动添加的优先级比初始化时候的handlers优先级高,越早添加的优先级越高
         if self.handlers and self.handlers[-1][0].pattern == '.*$':
-            self.handlers.insert(-1, (re.compile(host_pattern), handlers)) # 保证构造函数初始化时候的handlers在最后
+            # 保证构造函数初始化时候的handlers在最后
+            self.handlers.insert(-1, (re.compile(host_pattern), handlers))
         else:
             self.handlers.append((re.compile(host_pattern), handlers))
 
         for spec in host_handlers:
             if isinstance(spec, (tuple, list)): # 元祖或者列表
                 assert len(spec) in (2, 3, 4)
+                # handler可以设置多个参数，分别是
+                # pattern  handler handler的参数 以及 别名
+                # 其中handler可以为字符串，内部会自动import
                 spec = URLSpec(*spec)
             handlers.append(spec)
             if spec.name:

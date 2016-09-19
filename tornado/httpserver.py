@@ -175,6 +175,7 @@ class HTTPServer(TCPServer, Configurable,
     def handle_stream(self, stream, address):
         context = _HTTPRequestContext(stream, address,
                                       self.protocol)
+        # 服务器接收到连接，使用HTTP1ServerConnection进行处理
         conn = HTTP1ServerConnection(
             stream, self.conn_params, context)
         self._connections.add(conn)
@@ -182,9 +183,11 @@ class HTTPServer(TCPServer, Configurable,
 
     def start_request(self, server_conn, request_conn):
         # HTTP1ServerConnection HTTP1Connection
+        # 从HTTPServerConnectionDelegate继承
         return _ServerRequestAdapter(self, server_conn, request_conn) # HTTPMessageDelegate
 
     def on_close(self, server_conn):
+        # 从HTTPServerConnectionDelegate继承
         self._connections.remove(server_conn)
 
 
@@ -260,6 +263,7 @@ class _ServerRequestAdapter(httputil.HTTPMessageDelegate):
         self.request = None
         if isinstance(server.request_callback,
                       httputil.HTTPServerConnectionDelegate):
+            # 调用Application的start_request
             self.delegate = server.request_callback.start_request(
                 server_conn, request_conn)
             self._chunks = None
