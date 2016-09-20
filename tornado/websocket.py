@@ -94,6 +94,7 @@ class WebSocketHandler(tornado.web.RequestHandler):
     methods available to you are `write_message()`, `ping()`, and
     `close()`. Likewise, your request handler class should implement
     `open()` method rather than ``get()`` or ``post()``.
+    websockets在握手的时候是http，完成握手后通过tcp传输
 
     If you map the handler above to ``/websocket`` in your application, you can
     invoke it in JavaScript with::
@@ -147,6 +148,7 @@ class WebSocketHandler(tornado.web.RequestHandler):
         # Connection header should be upgrade.
         # Some proxy servers/load balancers
         # might mess with it.
+        # websockets握手
         headers = self.request.headers
         connection = map(lambda s: s.strip().lower(),
                          headers.get("Connection", "").split(","))
@@ -175,7 +177,7 @@ class WebSocketHandler(tornado.web.RequestHandler):
             self.finish(log_msg)
             gen_log.debug(log_msg)
             return
-
+        # 将此http连接detach，转为websocket使用
         self.stream = self.request.connection.detach()
         self.stream.set_close_callback(self.on_connection_close)
 
@@ -579,6 +581,7 @@ class WebSocketProtocol13(WebSocketProtocol):
         if self.stream.closed():
             self._abort()
             return
+        # 服务器返回握手请求响应
         self.stream.write(tornado.escape.utf8(
             "HTTP/1.1 101 Switching Protocols\r\n"
             "Upgrade: websocket\r\n"
@@ -587,9 +590,10 @@ class WebSocketProtocol13(WebSocketProtocol):
             "%s%s"
             "\r\n" % (self._challenge_response(),
                       subprotocol_header, extension_header)))
-
+        # 回调open函数，通知用户
         self._run_callback(self.handler.open, *self.handler.open_args,
                            **self.handler.open_kwargs)
+		# 进入数据流传输
         self._receive_frame()
 
     def _parse_extensions_header(self, headers):
@@ -802,11 +806,13 @@ class WebSocketProtocol13(WebSocketProtocol):
 
         if self._final_frame:
             self._handle_message(opcode, data)
-
+		# 继续调用_receive_frame，这里就形成了循环调用
         if not self.client_terminated:
             self._receive_frame()
 
     def _handle_message(self, opcode, data):
+		# 接收到消息，根据消息类型调用on_message或者on_pong通知用户
+		# 接收到ping消息的话自动响应
         if self.client_terminated:
             return
 
