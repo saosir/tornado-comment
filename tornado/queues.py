@@ -129,6 +129,7 @@ class Queue(object):
 
         self._maxsize = maxsize
         self._init()
+        # 等待waitter
         self._getters = collections.deque([])  # Futures.
         self._putters = collections.deque([])  # Pairs of (item, Future).
         self._unfinished_tasks = 0
@@ -162,6 +163,7 @@ class Queue(object):
         try:
             self.put_nowait(item)
         except QueueFull:
+            # 队列满之后就需要等待，将put请求放入putters
             future = Future()
             self._putters.append((item, future))
             _set_timeout(future, timeout)
@@ -177,6 +179,7 @@ class Queue(object):
         self._consume_expired()
         if self._getters:
             assert self.empty(), "queue non-empty, why are getters waiting?"
+            # 如果有get请求，立即满足
             getter = self._getters.popleft()
             self.__put_internal(item)
             getter.set_result(self._get())
@@ -195,6 +198,7 @@ class Queue(object):
         try:
             future.set_result(self.get_nowait())
         except QueueEmpty:
+            # 队列为空就需要等待
             self._getters.append(future)
             _set_timeout(future, timeout)
         return future
