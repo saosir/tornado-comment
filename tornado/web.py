@@ -1440,10 +1440,11 @@ class RequestHandler(object):
                     yield self.request.body
                 except iostream.StreamClosedError:
                     return
-
+            # 获取 RequestHandler 对应的http method，子类需要实现对应的方法比如get、post
             method = getattr(self, self.request.method.lower())
             result = method(*self.path_args, **self.path_kwargs)
             if result is not None:
+                # 被 gen.curoutine 修饰
                 result = yield result
             if self._auto_finish and not self._finished:
                 self.finish()
@@ -1961,6 +1962,7 @@ class _RequestDispatcher(httputil.HTTPMessageDelegate):
     def __init__(self, application, connection):
         self.application = application
         self.connection = connection
+        # set_request 设置
         self.request = None
         self.chunks = []
         self.handler_class = None
@@ -1977,6 +1979,7 @@ class _RequestDispatcher(httputil.HTTPMessageDelegate):
             return self.execute()
 
     def set_request(self, request):
+        # 设置handler_class 和 handler_kwargs
         self.request = request
         self._find_handler()
         self.stream_request_body = _has_stream_request_body(self.handler_class)
@@ -1995,6 +1998,7 @@ class _RequestDispatcher(httputil.HTTPMessageDelegate):
         for spec in handlers:
             match = spec.regex.match(self.request.path)
             if match:
+                # 找到一个handler，这里进行设置
                 self.handler_class = spec.handler_class
                 self.handler_kwargs = spec.kwargs
                 if spec.regex.groups:
