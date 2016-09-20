@@ -261,6 +261,8 @@ class _ServerRequestAdapter(httputil.HTTPMessageDelegate):
         self.server = server
         self.connection = request_conn
         self.request = None
+        # 在Application中使用HttpServer的时候，request_callback指的
+        # 是app实例，调用其方法start_request返回_RequestDispatch
         if isinstance(server.request_callback,
                       httputil.HTTPServerConnectionDelegate):
             # 调用Application的start_request

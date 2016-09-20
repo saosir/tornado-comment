@@ -718,7 +718,7 @@ class HTTP1ServerConnection(object):
                 request_delegate = delegate.start_request(self, conn)
                 try:
                     # 函数名虽然是 read_response , 但是最后调用 parse_request_start_line
-					# 处理一个http客户端的请求
+                    # 处理一个http客户端的请求
                     ret = yield conn.read_response(request_delegate)
                 except (iostream.StreamClosedError,
                         iostream.UnsatisfiableReadError):
