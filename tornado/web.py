@@ -1595,15 +1595,21 @@ def asynchronous(method):
        yieldable object from a method decorated with ``@asynchronous``
        is an error. Such return values were previously ignored silently.
     """
+    # 该修饰器主要用于修饰异步的http method，通过此修饰器修饰的方法在函数执行完毕
+    # 之后不会自动调用 self.finish，函数的异步主要是指通过回调函数callback实现，如果
+    # 该函数是一个coroutines，可以使用 gen.coroutine 进行修饰，注意：此修饰器只能用于
+    # 修饰http method
     # Delay the IOLoop import because it's not available on app engine.
     from tornado.ioloop import IOLoop
 
     @functools.wraps(method)
     def wrapper(self, *args, **kwargs):
+        # 将request设置为非自动关闭
         self._auto_finish = False
         with stack_context.ExceptionStackContext(
                 self._stack_context_handle_exception):
             result = method(self, *args, **kwargs)
+            # 如果返回future那么
             if result is not None:
                 result = gen.convert_yielded(result)
 

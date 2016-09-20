@@ -860,6 +860,16 @@ def with_timeout(timeout, future, io_loop=None, quiet_exceptions=()):
        Added the ``quiet_exceptions`` argument and the logging of unhandled
        exceptions.
     """
+    # 超时异步回调，超时产生TimeoutError异常，使用方式参考
+    # try:
+    #     header_data = yield gen.with_timeout(
+    #         self.stream.io_loop.time() + self.params.header_timeout,
+    #         header_future,
+    #         io_loop=self.stream.io_loop,
+    #         quiet_exceptions=iostream.StreamClosedError)
+    # except gen.TimeoutError:
+    #     self.close()
+    #     raise gen.Return(False)
     # TODO: allow yield points in addition to futures?
     # Tricky to do with stack_context semantics.
     #
