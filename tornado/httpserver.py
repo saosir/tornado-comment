@@ -182,8 +182,10 @@ class HTTPServer(TCPServer, Configurable,
         conn.start_serving(self)
 
     def start_request(self, server_conn, request_conn):
-        # HTTP1ServerConnection HTTP1Connection
-        # 从HTTPServerConnectionDelegate继承
+        # 参数分别为 HTTP1ServerConnection HTTP1Connection
+        # 从HTTPServerConnectionDelegate继承，_ServerRequestAdapter
+        # 会通过 self.request_callback 进一步将http-request进行
+        # 转发到委托类Application.__call__
         return _ServerRequestAdapter(self, server_conn, request_conn) # HTTPMessageDelegate
 
     def on_close(self, server_conn):
@@ -257,6 +259,8 @@ class _ServerRequestAdapter(httputil.HTTPMessageDelegate):
     """Adapts the `HTTPMessageDelegate` interface to the interface expected
     by our clients.
     """
+    # 根据server.request_callback类型决定是否将数据进行转发，
+    # 其作为一个中间媒介，将数据或者http请求进行转发
     def __init__(self, server, server_conn, request_conn):
         self.server = server
         self.connection = request_conn

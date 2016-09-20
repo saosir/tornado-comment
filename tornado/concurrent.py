@@ -165,6 +165,7 @@ class Future(object):
        suppress the logging by ensuring that the exception is observed:
        ``f.add_done_callback(lambda f: f.exception())``.
     """
+	# 实现简单但却是一个很重要的类，使异步代码的编写变为类似同步的方式
     def __init__(self):
         self._done = False
         self._result = None

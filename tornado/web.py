@@ -158,6 +158,7 @@ class RequestHandler(object):
         super(RequestHandler, self).__init__()
 
         self.application = application
+        # HTTPServerRequest 实例
         self.request = request
         self._headers_written = False
         self._finished = False
@@ -1968,7 +1969,9 @@ class _RequestDispatcher(httputil.HTTPMessageDelegate):
     def __init__(self, application, connection):
         self.application = application
         self.connection = connection
+
         # set_request 设置
+        # HTTPServerRequest实例
         self.request = None
         self.chunks = []
         self.handler_class = None
