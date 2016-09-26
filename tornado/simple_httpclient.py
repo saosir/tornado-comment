@@ -96,6 +96,7 @@ class SimpleAsyncHTTPClient(AsyncHTTPClient):
                                                       defaults=defaults)
         self.max_clients = max_clients
         self.queue = collections.deque()
+        # active
         self.active = {}
         self.waiting = {}
         self.max_buffer_size = max_buffer_size
@@ -152,12 +153,14 @@ class SimpleAsyncHTTPClient(AsyncHTTPClient):
         return _HTTPConnection
 
     def _handle_request(self, request, release_callback, final_callback):
+        # 处理连接，使用 tcp_client 连接之后获取页面
         self._connection_class()(
             self.io_loop, self, request, release_callback,
             final_callback, self.max_buffer_size, self.tcp_client,
             self.max_header_size, self.max_body_size)
 
     def _release_fetch(self, key):
+        # 处理完成，从active队列中删除
         del self.active[key]
         self._process_queue()
 

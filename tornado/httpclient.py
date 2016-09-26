@@ -158,10 +158,12 @@ class AsyncHTTPClient(Configurable):
 
     def __new__(cls, io_loop=None, force_instance=False, **kwargs):
         io_loop = io_loop or IOLoop.current()
+        # 每个 io_loop 对应一个 instance_cache
         if force_instance:
             instance_cache = None
         else:
             instance_cache = cls._async_clients()
+        # 已经存在cache中，立即返回
         if instance_cache is not None and io_loop in instance_cache:
             return instance_cache[io_loop]
         instance = super(AsyncHTTPClient, cls).__new__(cls, io_loop=io_loop,
@@ -172,6 +174,7 @@ class AsyncHTTPClient(Configurable):
         # SimpleAsyncHTTPClient.
         instance._instance_cache = instance_cache
         if instance_cache is not None:
+            # 一个 ioloop 对应一个 client
             instance_cache[instance.io_loop] = instance
         return instance
 
