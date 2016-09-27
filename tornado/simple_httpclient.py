@@ -125,12 +125,14 @@ class SimpleAsyncHTTPClient(AsyncHTTPClient):
         key = object()
         self.queue.append((key, request, callback))
         if not len(self.active) < self.max_clients:
+            # 如果队列数超过最大限制，设置一个超时值
             timeout_handle = self.io_loop.add_timeout(
                 self.io_loop.time() + min(request.connect_timeout,
                                           request.request_timeout),
                 functools.partial(self._on_timeout, key, "in request queue"))
         else:
             timeout_handle = None
+        # 调用之后每个 request 进入 waiting 队列
         self.waiting[key] = (request, callback, timeout_handle)
         self._process_queue()
         if self.queue:
@@ -144,9 +146,11 @@ class SimpleAsyncHTTPClient(AsyncHTTPClient):
                 key, request, callback = self.queue.popleft()
                 if key not in self.waiting:
                     continue
+                # 从 waiting 队列移除，放入 active 队列表示正在处理 request
                 self._remove_timeout(key)
                 self.active[key] = (request, callback)
                 release_callback = functools.partial(self._release_fetch, key)
+                # 进行回调处理，完成之后释放资源
                 self._handle_request(request, release_callback, callback)
 
     def _connection_class(self):
@@ -179,6 +183,7 @@ class SimpleAsyncHTTPClient(AsyncHTTPClient):
         :arg object key: A simple object to mark the request.
         :info string key: More detailed timeout information.
         """
+        # 超时发生，request 未得到处理，返回一个 timeout HTTPResponse 给用户
         request, callback, timeout_handle = self.waiting[key]
         self.queue.remove((key, request, callback))
 
