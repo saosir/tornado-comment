@@ -790,6 +790,7 @@ class RequestHandler(object):
         # If no template_path is specified, use the path of the calling file
         template_path = self.get_template_path()
         if not template_path:
+            # 找到调用 render_string 所在的.py文件目录，用于设置模版loader
             frame = sys._getframe(0)
             web_file = frame.f_code.co_filename
             while frame.f_code.co_filename == web_file:
@@ -815,6 +816,7 @@ class RequestHandler(object):
         defaults in the `tornado.template` module and keyword arguments
         to `render` or `render_string`.
         """
+        # 在模版中可以使用的变量与函数，可以通过覆盖此方式自定义模版变量
         namespace = dict(
             handler=self,
             request=self.request,
@@ -826,6 +828,7 @@ class RequestHandler(object):
             xsrf_form_html=self.xsrf_form_html,
             reverse_url=self.reverse_url
         )
+        # ui元素
         namespace.update(self.ui)
         return namespace
 

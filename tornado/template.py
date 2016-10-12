@@ -442,6 +442,7 @@ class Loader(BaseLoader):
         if parent_path and not parent_path.startswith("<") and \
             not parent_path.startswith("/") and \
                 not name.startswith("/"):
+            # 得到相对路径，用于作为缓存的模版名 key
             current_path = os.path.join(self.root, parent_path)
             file_dir = os.path.dirname(os.path.abspath(current_path))
             relative_path = os.path.abspath(os.path.join(file_dir, name))
@@ -451,6 +452,7 @@ class Loader(BaseLoader):
 
     def _create_template(self, name):
         path = os.path.join(self.root, name)
+        # 得到绝对路径创建一个模版
         with open(path, "rb") as f:
             template = Template(f.read(), name=name, loader=self)
             return template
