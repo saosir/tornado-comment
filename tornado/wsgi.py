@@ -216,6 +216,7 @@ class WSGIAdapter(object):
             host = environ["SERVER_NAME"]
         connection = _WSGIConnection(method, start_response,
                                      _WSGIRequestContext(remote_ip, protocol))
+        # 构建一个假的 http server request
         request = httputil.HTTPServerRequest(
             method, uri, "HTTP/1.1", headers=headers, body=body,
             host=host, connection=connection)
@@ -310,6 +311,7 @@ class WSGIContainer(object):
     def environ(request):
         """Converts a `tornado.httputil.HTTPServerRequest` to a WSGI environment.
         """
+        # 构建一个 environ 给 wsgi 程序
         hostport = request.host.split(":")
         if len(hostport) == 2:
             host = hostport[0]

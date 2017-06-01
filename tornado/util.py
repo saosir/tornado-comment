@@ -45,6 +45,7 @@ else:
 class ObjectDict(dict):
     """Makes a dictionary behave like an object, with attribute-style access.
     """
+
     def __getattr__(self, name):
         try:
             return self[name]
@@ -61,6 +62,7 @@ class GzipDecompressor(object):
     The interface is like that of `zlib.decompressobj` (without some of the
     optional arguments, but it understands gzip headers and checksums.
     """
+
     def __init__(self):
         # Magic parameter makes zlib module understand gzip header
         # http://stackoverflow.com/questions/1838699/how-can-i-decompress-a-gzip-stream-with-zlib
@@ -137,7 +139,7 @@ def exec_in(code, glob, loc=None):
 
 
 if PY3:
-    exec("""
+    exec ("""
 def raise_exc_info(exc_info):
     raise exc_info[1].with_traceback(exc_info[2])
 
@@ -147,7 +149,7 @@ def exec_in(code, glob, loc=None):
     exec(code, glob, loc)
 """)
 else:
-    exec("""
+    exec ("""
 def raise_exc_info(exc_info):
     raise exc_info[0], exc_info[1], exc_info[2]
 
@@ -188,6 +190,7 @@ def _re_unescape_replacement(match):
         raise ValueError("cannot unescape '\\\\%s'" % group[0])
     return group
 
+
 _re_unescape_pattern = re.compile(r'\\(.)', re.DOTALL)
 
 
@@ -201,6 +204,7 @@ def re_unescape(s):
     .. versionadded:: 4.4
     """
     return _re_unescape_pattern.sub(_re_unescape_replacement, s)
+
 
 # 类似于抽象函数，可以动态配置子类，子类实现initialize来替代__init__构造函数
 class Configurable(object):
@@ -223,9 +227,9 @@ class Configurable(object):
     `configurable_base` and `configurable_default`, and use the instance
     method `initialize` instead of ``__init__``.
     """
-	# 子类需要继承configurable_base 和 configurable_default
-	# configurable_base 返回抽象类，configurable_default返回默认的impl类
-	# 通过configure可以修改默认的impl类
+    # 子类需要继承configurable_base 和 configurable_default
+    # configurable_base 返回抽象类，configurable_default返回默认的impl类
+    # 通过configure可以修改默认的impl类
     __impl_class = None  # type: type
     __impl_kwargs = None  # type: dict
 
@@ -233,13 +237,13 @@ class Configurable(object):
         base = cls.configurable_base()
         init_kwargs = {}
         if cls is base:
-			# 是基类的话获取对应的实现类，然后实例化，换句话说就是调用的是工厂函数
-			# 工厂函数可以根据配置的底层实现类来创建对象
+            # 是基类的话获取对应的实现类，然后实例化，换句话说就是调用的是工厂函数
+            # 工厂函数可以根据配置的底层实现类来创建对象
             impl = cls.configured_class()
             if base.__impl_kwargs:
                 init_kwargs.update(base.__impl_kwargs)
         else:
-			# 调用的是实现类的构造函数，直接初始化
+            # 调用的是实现类的构造函数，直接初始化
             impl = cls
         init_kwargs.update(kwargs)
         instance = super(Configurable, cls).__new__(impl)
@@ -256,12 +260,12 @@ class Configurable(object):
         This will normally return the class in which it is defined.
         (which is *not* necessarily the same as the cls classmethod parameter).
         """
-		# 最基的类
+        # 最基的类
         raise NotImplementedError()
 
     @classmethod
     def configurable_default(cls):
-		# 这里返回实现类impl_class
+        # 这里返回实现类impl_class
         """Returns the implementation class to be used if none is configured."""
         raise NotImplementedError()
 
@@ -282,7 +286,7 @@ class Configurable(object):
         to the constructor.  This can be used to set global defaults for
         some parameters.
         """
-		# 手动设置实现类与初始化构造函数参数
+        # 手动设置实现类与初始化构造函数参数
         base = cls.configurable_base()
         if isinstance(impl, (unicode_type, bytes)):
             impl = import_object(impl)
@@ -294,9 +298,9 @@ class Configurable(object):
     @classmethod
     def configured_class(cls):
         """Returns the currently configured class."""
-		# 得到基类对应的实现类
+        # 得到基类对应的实现类
         base = cls.configurable_base()
-		# 首次设置类的子类
+        # 首次设置类的子类
         if cls.__impl_class is None:
             base.__impl_class = cls.configurable_default()
         return base.__impl_class
@@ -320,6 +324,7 @@ class ArgReplacer(object):
     whether it is passed by position or keyword.  For use in decorators
     and similar wrappers.
     """
+
     def __init__(self, func, name):
         self.name = name
         try:
@@ -377,7 +382,8 @@ class ArgReplacer(object):
 
 def timedelta_to_seconds(td):
     """Equivalent to td.total_seconds() (introduced in python 2.7)."""
-    return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10 ** 6) / float(10 ** 6)
+    return (td.microseconds + (
+    td.seconds + td.days * 24 * 3600) * 10 ** 6) / float(10 ** 6)
 
 
 def _websocket_mask_python(mask, data):
@@ -401,8 +407,9 @@ def _websocket_mask_python(mask, data):
     else:
         return unmasked.tostring()
 
+
 if (os.environ.get('TORNADO_NO_EXTENSION') or
-        os.environ.get('TORNADO_EXTENSION') == '0'):
+            os.environ.get('TORNADO_EXTENSION') == '0'):
     # These environment variables exist to make it easier to do performance
     # comparisons; they are not guaranteed to remain supported in the future.
     _websocket_mask = _websocket_mask_python
